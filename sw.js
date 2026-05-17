@@ -1,7 +1,10 @@
-const CACHE_NAME = 'cryptotrack-v1';
+const CACHE_NAME = 'cryptotrack-v2';
 const urlsToCache = [
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
