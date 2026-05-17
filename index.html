@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#080c18" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CryptoTrack" />
+  <title>CryptoTrack — Portfolio</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#080c18; --bg2:#0d1225; --bg3:#131929; --bg4:#0a0f1e;
+      --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+      --text:#e2e8f8; --muted:#4a5568; --muted2:#718096;
+      --accent:#7c6dfa; --accent2:#4f8ef7;
+      --green:#10d98a; --red:#ff5370; --gold:#f6c90e;
+      --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden}
+    ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#1e2840;border-radius:2px}
+    #app{min-height:100vh;max-width:480px;margin:0 auto}
+
+    /* Header */
+    .header{padding:52px 20px 0;position:sticky;top:0;z-index:50;background:linear-gradient(180deg,var(--bg) 75%,transparent 100%);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+    .header-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 16px rgba(124,109,250,.35)}
+    .logo-text{font-size:20px;font-weight:800;letter-spacing:-.5px}
+    .logo-text span{color:var(--accent)}
+    .icon-btn{width:36px;height:36px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--muted2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .icon-btn.spinning{animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Summary */
+    .summary{background:linear-gradient(135deg,rgba(124,109,250,.12),rgba(79,142,247,.08));border:1px solid rgba(124,109,250,.2);border-radius:18px;padding:18px 20px;margin:0 20px 16px}
+    .sum-label{font-size:11px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)}
+    .sum-value{font-size:34px;font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+    .sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .sg-label{font-size:10px;color:var(--muted);margin-bottom:3px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px}
+    .sg-value{font-size:13px;font-weight:700;font-family:var(--mono)}
+
+    /* Alloc */
+    .alloc-wrap{margin:0 20px 14px}
+    .alloc-label{font-size:10px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)}
+    .alloc-bar{display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px}
+    .alloc-seg{transition:flex .6s ease}
+    .alloc-legend{display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:7px}
+    .alloc-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted2);font-family:var(--mono)}
+    .alloc-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+
+    /* List */
+    .list-header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin-bottom:8px}
+    .list-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;font-family:var(--mono)}
+    .add-btn{display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);box-shadow:0 4px 14px rgba(124,109,250,.3);transition:transform .15s}
+    .add-btn:active{transform:scale(.96)}
+    .update-time{font-size:10px;color:var(--muted);font-family:var(--mono);text-align:center;padding:2px 0 8px}
+    .holding-list{padding:0 12px;display:flex;flex-direction:column;gap:10px;padding-bottom:100px}
+
+    /* Coin Card */
+    .coin-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;overflow:hidden;animation:slideIn .3s ease}
+    @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .card-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;position:relative}
+    .card-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:0 2px 2px 0}
+    .coin-img{width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0}
+    .coin-icon-fb{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;font-family:var(--mono)}
+    .coin-main{flex:1;min-width:0}
+    .coin-top{display:flex;justify-content:space-between;align-items:flex-start}
+    .coin-name{font-weight:700;font-size:15px}
+    .coin-sub{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:2px}
+    .coin-right{text-align:right}
+    .coin-value{font-weight:700;font-size:15px;font-family:var(--mono)}
+    .coin-24h{font-size:11px;font-family:var(--mono);font-weight:600;margin-top:2px}
+    .coin-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:7px}
+    .coin-price-lbl{font-size:12px;color:var(--muted2);font-family:var(--mono)}
+    .coin-pnl{font-size:12px;font-weight:700;font-family:var(--mono)}
+    .chevron{font-size:11px;color:var(--muted);margin-left:4px;transition:transform .25s;display:inline-block}
+    .coin-card.open .chevron{transform:rotate(180deg)}
+
+    /* Panel */
+    .coin-panel{display:none;border-top:1px solid var(--border)}
+    .coin-card.open .coin-panel{display:block}
+
+    /* DCA Stats */
+    .dca-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)}
+    .dca-stat{background:var(--bg3);padding:11px 12px}
+    .dca-stat-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+    .dca-stat-value{font-size:13px;font-weight:700;font-family:var(--mono)}
+
+    /* Buy rows */
+    .buys-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px}
+    .buys-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)}
+    .buy-add-btn{font-size:12px;font-weight:700;background:rgba(124,109,250,.12);border:1px solid rgba(124,109,250,.25);color:var(--accent);border-radius:8px;padding:5px 11px;cursor:pointer;font-family:var(--sans)}
+    .buy-row{display:flex;align-items:center;padding:9px 16px;border-top:1px solid var(--border);gap:10px}
+    .buy-num{width:20px;height:20px;border-radius:6px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted2);font-family:var(--mono);flex-shrink:0}
+    .buy-info{flex:1;min-width:0}
+    .buy-main{display:flex;justify-content:space-between}
+    .buy-qty{font-size:13px;font-weight:700;font-family:var(--mono)}
+    .buy-val{font-size:13px;font-family:var(--mono);color:var(--muted2)}
+    .buy-meta{display:flex;justify-content:space-between;margin-top:3px}
+    .buy-price-lbl{font-size:11px;color:var(--muted2);font-family:var(--mono)}
+    .buy-pnl{font-size:11px;font-weight:600;font-family:var(--mono)}
+    .buy-date{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+    .buy-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1}
+    .buy-del:hover{color:var(--red)}
+    .card-actions{display:flex;gap:8px;padding:10px 16px 14px}
+    .ca-btn{flex:1;padding:8px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+    .ca-del{background:rgba(255,83,112,.08);color:var(--red);border:1px solid rgba(255,83,112,.18)}
+
+    .pos{color:var(--green)} .neg{color:var(--red)}
+
+    /* Empty */
+    .empty{text-align:center;padding:60px 30px}
+    .empty-icon{font-size:56px;margin-bottom:16px}
+    .empty-title{font-size:20px;font-weight:800;margin-bottom:8px}
+    .empty-sub{font-size:14px;color:var(--muted2);line-height:1.6;margin-bottom:28px}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:200;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:28px 24px 44px;width:100%;max-width:480px;max-height:93vh;overflow-y:auto;animation:slideUp .3s cubic-bezier(.4,0,.2,1)}
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 22px}
+    .modal-title{font-size:20px;font-weight:800;margin-bottom:22px}
+    .form-group{margin-bottom:16px}
+    .form-label{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:7px;display:block}
+    .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px 14px;font-size:15px;font-family:var(--sans);outline:none;transition:border-color .2s}
+    .form-input:focus{border-color:var(--accent)}
+    .form-hint{font-size:11px;color:var(--muted2);margin-top:5px;font-family:var(--mono)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    /* Search */
+    .search-wrap{position:relative}
+    .search-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px 14px 12px 40px;font-size:15px;font-family:var(--sans);outline:none;transition:border-color .2s}
+    .search-input:focus{border-color:var(--accent)}
+    .s-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;pointer-events:none}
+    .s-spinner{position:absolute;right:13px;top:50%;transform:translateY(-50%);animation:spin 1s linear infinite;font-size:14px}
+    .search-results{background:var(--bg3);border:1px solid var(--border);border-radius:12px;margin-top:8px;max-height:220px;overflow-y:auto}
+    .search-item{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+    .search-item:last-child{border-bottom:none}
+    .search-item:active{background:rgba(124,109,250,.1)}
+    .s-name{font-weight:600;font-size:14px}
+    .s-sym{font-size:11px;color:var(--muted2);font-family:var(--mono)}
+    .s-price{font-family:var(--mono);font-size:13px;color:var(--muted2);margin-left:auto}
+    .no-results{padding:18px;text-align:center;color:var(--muted2);font-size:13px}
+
+    /* Selected coin */
+    .sel-coin-box{display:flex;align-items:center;gap:12px;background:rgba(124,109,250,.08);border:1px solid rgba(124,109,250,.25);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+    .sel-info{flex:1}
+    .sel-name{font-weight:700;font-size:15px}
+    .sel-price{font-size:12px;color:var(--muted2);font-family:var(--mono);margin-top:2px}
+    .clear-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+
+    /* DCA existing info */
+    .dca-info-box{background:rgba(16,217,138,.06);border:1px solid rgba(16,217,138,.2);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+    .dca-info-title{font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:8px}
+    .dca-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .di-label{font-size:10px;color:var(--muted2);font-family:var(--mono);margin-bottom:2px}
+    .di-value{font-size:13px;font-weight:700;font-family:var(--mono)}
+
+    /* Preview */
+    .preview-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .prev-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+    .prev-value{font-size:14px;font-weight:700;font-family:var(--mono)}
+
+    /* Buttons */
+    .modal-btns{display:flex;gap:10px;margin-top:6px}
+    .btn-cancel{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--muted2);border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+    .btn-save{flex:2;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--sans);box-shadow:0 6px 20px rgba(124,109,250,.3);transition:all .2s}
+    .btn-save:disabled{opacity:.35;box-shadow:none;cursor:not-allowed}
+
+    /* Install */
+    .install-banner{margin:0 12px 12px;background:linear-gradient(135deg,rgba(246,201,14,.1),rgba(246,201,14,.05));border:1px solid rgba(246,201,14,.22);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px}
+    .install-text{flex:1;font-size:13px;line-height:1.4;color:var(--muted2)}
+    .install-text strong{color:var(--gold)}
+    .install-now{background:var(--gold);color:#000;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+    .install-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+    .safe-top{height:env(safe-area-inset-top,0px)}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="safe-top"></div>
+
+  <div class="install-banner" id="installBanner" style="display:none">
+    <span style="font-size:22px">📲</span>
+    <div class="install-text"><strong>Install as App</strong><br>Home screen-এ add করুন!</div>
+    <button class="install-now" id="installBtn">Install</button>
+    <button class="install-close" id="closeBanner">✕</button>
+  </div>
+
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-icon">₿</div>
+        <div class="logo-text">Crypto<span>Track</span></div>
+      </div>
+      <button class="icon-btn" id="refreshBtn">↻</button>
+    </div>
+    <div class="summary" id="summaryCard" style="display:none">
+      <div class="sum-label">Total Portfolio Value</div>
+      <div class="sum-value" id="totalValue">$0.00</div>
+      <div class="sum-grid">
+        <div><div class="sg-label">Invested</div><div class="sg-value" id="totInv">—</div></div>
+        <div><div class="sg-label">P&L $</div><div class="sg-value" id="totPnlAbs">—</div></div>
+        <div><div class="sg-label">P&L %</div><div class="sg-value" id="totPnlPct">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alloc-wrap" id="allocWrap" style="display:none">
+    <div class="alloc-label">Allocation</div>
+    <div class="alloc-bar" id="allocBar"></div>
+    <div class="alloc-legend" id="allocLegend"></div>
+  </div>
+
+  <div class="list-header">
+    <div class="list-title" id="holdingsCount">Holdings</div>
+    <button class="add-btn" id="openAddBtn">＋ Add Buy</button>
+  </div>
+  <div class="update-time" id="updateTime"></div>
+  <div class="holding-list" id="holdingList"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">Add Buy</div>
+
+    <div id="searchSection">
+      <div class="form-group">
+        <label class="form-label">Search Coin</label>
+        <div class="search-wrap">
+          <span class="s-icon">🔍</span>
+          <input class="search-input" id="coinSearch" placeholder="Bitcoin, ETH, Solana..." autocomplete="off" />
+          <span class="s-spinner" id="searchSpinner" style="display:none">⟳</span>
+        </div>
+        <div class="search-results" id="searchResults" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="sel-coin-box" id="selCoinBox" style="display:none">
+      <img id="selImg" src="" alt="" width="40" height="40" style="border-radius:50%;flex-shrink:0" onerror="this.style.display='none'" />
+      <div class="sel-info">
+        <div class="sel-name" id="selName"></div>
+        <div class="sel-price" id="selPrice"></div>
+      </div>
+      <button class="clear-btn" id="clearCoinBtn" onclick="clearCoin()">✕</button>
+    </div>
+
+    <!-- Existing DCA summary -->
+    <div class="dca-info-box" id="dcaInfoBox" style="display:none">
+      <div class="dca-info-title">📊 Existing Position</div>
+      <div class="dca-info-grid">
+        <div><div class="di-label">Avg Buy</div><div class="di-value" id="di-avg">—</div></div>
+        <div><div class="di-label">Total Qty</div><div class="di-value" id="di-qty">—</div></div>
+        <div><div class="di-label">Buys</div><div class="di-value" id="di-count">—</div></div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quantity</label>
+        <input class="form-input" id="amtInput" type="number" step="any" min="0" placeholder="0.00" />
+        <div class="form-hint" id="amtHint"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Buy Price (USD)</label>
+        <input class="form-input" id="buyInput" type="number" step="any" min="0" placeholder="0.00" />
+        <div class="form-hint">optional — for P&L</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" id="dateInput" type="date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <input class="form-input" id="noteInput" type="text" placeholder="e.g. DCA #2" maxlength="40" />
+      </div>
+    </div>
+
+    <!-- Live preview -->
+    <div class="preview-box" id="previewBox" style="display:none">
+      <div><div class="prev-label">Current Value</div><div class="prev-value" id="pv-val">—</div></div>
+      <div><div class="prev-label">New Avg Buy</div><div class="prev-value" id="pv-avg">—</div></div>
+      <div><div class="prev-label">P&L %</div><div class="prev-value" id="pv-pnl">—</div></div>
+      <div><div class="prev-label">New Total Qty</div><div class="prev-value" id="pv-qty">—</div></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" id="cancelBtn">Cancel</button>
+      <button class="btn-save" id="saveBtn" disabled>Record Buy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// Data model:
+// portfolio = [{coinId, name, symbol, image,
+//   buys:[{id, qty, price, date, note}]}]
+// ══════════════════════════════════════════
+let portfolio = [];
+let priceCache = {};
+let selCoin = null;
+let searchTO = null;
+let openCard = null;
+let deferredPrompt = null;
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+// Load & migrate old format
+try {
+  const raw = JSON.parse(localStorage.getItem('ct_v2') || '[]');
+  portfolio = raw.map(item => {
+    if(item.buys) return item;
+    // old format had single amount/buyPrice
+    return {
+      coinId: item.coinId, name: item.name,
+      symbol: item.symbol, image: item.image||'',
+      buys: item.amount
+        ? [{id:uid(), qty:item.amount, price:item.buyPrice||0, date:'', note:'Imported'}]
+        : []
+    };
+  }).filter(i => i.buys && i.buys.length);
+} catch{}
+
+function save(){ localStorage.setItem('ct_v2', JSON.stringify(portfolio)); }
+
+// Colors
+const PAL=['#7c6dfa','#4f8ef7','#10d98a','#f6c90e','#ff5370','#ff9f43','#00cec9','#a29bfe','#fd79a8','#55efc4'];
+const col = i => PAL[i % PAL.length];
+
+// Format helpers
+function fUSD(v){
+  if(v===null||v===undefined||isNaN(v)) return '—';
+  const a=Math.abs(v), s=v<0?'-':'';
+  if(a>=1e9) return s+'$'+(a/1e9).toFixed(2)+'B';
+  if(a>=1e6) return s+'$'+(a/1e6).toFixed(2)+'M';
+  if(a>=1e3) return s+'$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(a>=1)   return s+'$'+a.toFixed(2);
+  if(a>=0.01)return s+'$'+a.toFixed(4);
+  return s+'$'+a.toFixed(8);
+}
+function fPct(v){
+  if(v===null||v===undefined||isNaN(v)) return '—';
+  return (v>=0?'+':'')+v.toFixed(2)+'%';
+}
+function fNum(v){
+  if(!v&&v!==0) return '—';
+  if(v>=1e6) return (v/1e6).toFixed(3)+'M';
+  if(v>=1e3) return (v/1e3).toFixed(3)+'K';
+  if(v>=1)   return v.toFixed(4);
+  return v.toFixed(8);
+}
+
+// DCA calc — weighted average
+function dca(item){
+  let qty=0, cost=0;
+  for(const b of item.buys){
+    qty += b.qty;
+    if(b.price>0) cost += b.qty * b.price;
+  }
+  const avg = cost>0 ? cost/qty : 0;
+  return {qty, cost, avg, count:item.buys.length};
+}
+
+// ── API ──────────────────────────────────
+async function searchAPI(q){
+  const r = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`);
+  const d = await r.json();
+  return (d.coins||[]).slice(0,8);
+}
+async function fetchPrices(ids){
+  if(!ids.length) return {};
+  const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd&include_24hr_change=true`);
+  return r.json();
+}
+
+// ── Refresh ───────────────────────────────
+async function refresh(){
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  try{
+    const ids = portfolio.map(p=>p.coinId);
+    if(!ids.length){ btn.classList.remove('spinning'); return; }
+    const data = await fetchPrices(ids);
+    Object.assign(priceCache, data);
+    render();
+    const t = new Date();
+    document.getElementById('updateTime').textContent =
+      'Updated '+t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){ console.error(e); }
+  finally{ btn.classList.remove('spinning'); }
+}
+
+// ── Render ────────────────────────────────
+function render(){
+  const list = document.getElementById('holdingList');
+
+  if(!portfolio.length){
+    document.getElementById('summaryCard').style.display='none';
+    document.getElementById('allocWrap').style.display='none';
+    document.getElementById('holdingsCount').textContent='Holdings';
+    list.innerHTML=`<div class="empty">
+      <div class="empty-icon">🪙</div>
+      <div class="empty-title">Portfolio is empty</div>
+      <div class="empty-sub">যেকোনো coin search করে প্রথম buy record করুন।<br>একই coin একাধিকবার buy করলে Avg Price automatically calculate হবে।</div>
+      <button class="add-btn" style="margin:0 auto;display:flex" onclick="openModal(null)">＋ Add First Buy</button>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('holdingsCount').textContent=`Holdings (${portfolio.length})`;
+
+  // Summary totals
+  let totVal=0, totInv=0;
+  portfolio.forEach(item=>{
+    const price = priceCache[item.coinId]?.usd||0;
+    const {qty,cost} = dca(item);
+    totVal += price*qty;
+    totInv += cost;
+  });
+  document.getElementById('summaryCard').style.display='block';
+  document.getElementById('totalValue').textContent = fUSD(totVal);
+  if(totInv>0){
+    const pnl=totVal-totInv, pct=(pnl/totInv)*100;
+    document.getElementById('totInv').textContent = fUSD(totInv);
+    document.getElementById('totPnlAbs').textContent = (pnl>=0?'+':'')+fUSD(Math.abs(pnl));
+    document.getElementById('totPnlAbs').className='sg-value '+(pnl>=0?'pos':'neg');
+    document.getElementById('totPnlPct').textContent = fPct(pct);
+    document.getElementById('totPnlPct').className='sg-value '+(pct>=0?'pos':'neg');
+  } else {
+    ['totInv','totPnlAbs','totPnlPct'].forEach(id=>{
+      document.getElementById(id).textContent='—';
+      document.getElementById(id).className='sg-value';
+    });
+  }
+
+  // Alloc bar
+  const allocWrap = document.getElementById('allocWrap');
+  if(portfolio.length>1 && totVal>0){
+    allocWrap.style.display='block';
+    document.getElementById('allocBar').innerHTML = portfolio.map((item,i)=>{
+      const price=priceCache[item.coinId]?.usd||0;
+      const {qty}=dca(item);
+      const pct=(price*qty/totVal)*100;
+      return `<div class="alloc-seg" style="flex:${pct};background:${col(i)}" title="${item.symbol}: ${pct.toFixed(1)}%"></div>`;
+    }).join('');
+    document.getElementById('allocLegend').innerHTML = portfolio.map((item,i)=>{
+      const price=priceCache[item.coinId]?.usd||0;
+      const {qty}=dca(item);
+      const pct=totVal>0?(price*qty/totVal)*100:0;
+      return `<div class="alloc-item"><div class="alloc-dot" style="background:${col(i)}"></div>${item.symbol} ${pct.toFixed(1)}%</div>`;
+    }).join('');
+  } else { allocWrap.style.display='none'; }
+
+  // Cards
+  list.innerHTML='';
+  portfolio.forEach((item,idx)=>{
+    const price = priceCache[item.coinId]?.usd||0;
+    const ch24 = priceCache[item.coinId]?.usd_24h_change;
+    const {qty,cost,avg,count} = dca(item);
+    const val = price*qty;
+    const pnl = cost>0 ? val-cost : null;
+    const pnlPct = (cost>0&&price>0) ? (price-avg)/avg*100 : null;
+    const color = col(idx);
+    const isOpen = openCard===item.coinId;
+
+    const buyRowsHTML = item.buys.map((b,bi)=>{
+      const bVal = price*b.qty;
+      const bPnl = (b.price>0&&price>0) ? (price-b.price)/b.price*100 : null;
+      return `<div class="buy-row">
+        <div class="buy-num">${bi+1}</div>
+        <div class="buy-info">
+          <div class="buy-main">
+            <span class="buy-qty">${fNum(b.qty)} ${item.symbol}</span>
+            <span class="buy-val">${price>0?fUSD(bVal):'—'}</span>
+          </div>
+          <div class="buy-meta">
+            <span class="buy-price-lbl">${b.price>0?'Bought @ '+fUSD(b.price):'No buy price'}</span>
+            ${bPnl!==null?`<span class="buy-pnl ${bPnl>=0?'pos':'neg'}">${fPct(bPnl)}</span>`:''}
+          </div>
+          ${b.date||b.note?`<div class="buy-date">${[b.date,b.note].filter(Boolean).join(' · ')}</div>`:''}
+        </div>
+        <button class="buy-del" onclick="delBuy('${item.coinId}','${b.id}')">✕</button>
+      </div>`;
+    }).join('');
+
+    const div = document.createElement('div');
+    div.className='coin-card'+(isOpen?' open':'');
+    div.innerHTML=`
+      <style>.coin-card:nth-child(${idx+1}) .card-header::before{background:${color}}</style>
+      <div class="card-header" onclick="toggleCard('${item.coinId}')">
+        ${item.image
+          ?`<img class="coin-img" src="${item.image}" alt="${item.symbol}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+             <div class="coin-icon-fb" style="background:${color};display:none">${item.symbol.charAt(0)}</div>`
+          :`<div class="coin-icon-fb" style="background:${color}">${item.symbol.charAt(0)}</div>`
+        }
+        <div class="coin-main">
+          <div class="coin-top">
+            <div>
+              <div class="coin-name">${item.name} <span class="chevron">▼</span></div>
+              <div class="coin-sub">${fNum(qty)} ${item.symbol} · ${count} buy${count>1?'s':''}</div>
+            </div>
+            <div class="coin-right">
+              <div class="coin-value">${price>0?fUSD(val):'—'}</div>
+              ${ch24!==undefined?`<div class="coin-24h ${ch24>=0?'pos':'neg'}">${fPct(ch24)} 24h</div>`:''}
+            </div>
+          </div>
+          <div class="coin-bottom">
+            <div class="coin-price-lbl">${price>0?fUSD(price):'Loading...'}</div>
+            ${pnlPct!==null?`<div class="coin-pnl ${pnlPct>=0?'pos':'neg'}">${fPct(pnlPct)} P&L</div>`:''}
+          </div>
+        </div>
+      </div>
+      <div class="coin-panel">
+        <div class="dca-stats">
+          <div class="dca-stat">
+            <div class="dca-stat-label">Avg Buy Price</div>
+            <div class="dca-stat-value">${avg>0?fUSD(avg):'—'}</div>
+          </div>
+          <div class="dca-stat">
+            <div class="dca-stat-label">Total Invested</div>
+            <div class="dca-stat-value">${cost>0?fUSD(cost):'—'}</div>
+          </div>
+          <div class="dca-stat">
+            <div class="dca-stat-label">P&L (USD)</div>
+            <div class="dca-stat-value ${pnl!==null?(pnl>=0?'pos':'neg'):''}">
+              ${pnl!==null?(pnl>=0?'+':'')+fUSD(Math.abs(pnl)):'—'}
+            </div>
+          </div>
+        </div>
+        <div class="buys-header">
+          <div class="buys-title">Buy History (${count})</div>
+          <button class="buy-add-btn" onclick="openModal('${item.coinId}')">＋ Add Buy</button>
+        </div>
+        ${buyRowsHTML}
+        <div class="card-actions">
+          <button class="ca-btn ca-del" onclick="delCoin('${item.coinId}')">🗑 Remove Coin</button>
+        </div>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function toggleCard(id){
+  openCard = openCard===id ? null : id;
+  render();
+}
+
+// ── Delete ────────────────────────────────
+function delBuy(coinId, buyId){
+  const item = portfolio.find(p=>p.coinId===coinId);
+  if(!item) return;
+  if(item.buys.length===1){
+    if(!confirm(`Last buy. Remove ${item.name} entirely?`)) return;
+    portfolio = portfolio.filter(p=>p.coinId!==coinId);
+    if(openCard===coinId) openCard=null;
+  } else {
+    item.buys = item.buys.filter(b=>b.id!==buyId);
+  }
+  save(); render();
+}
+function delCoin(coinId){
+  const item = portfolio.find(p=>p.coinId===coinId);
+  if(!confirm(`Remove ${item?.name} and all ${item?.buys.length} buy(s)?`)) return;
+  portfolio = portfolio.filter(p=>p.coinId!==coinId);
+  if(openCard===coinId) openCard=null;
+  save(); render();
+}
+
+// ── Modal ─────────────────────────────────
+function openModal(coinId){
+  selCoin = null;
+  document.getElementById('amtInput').value='';
+  document.getElementById('buyInput').value='';
+  document.getElementById('dateInput').value=new Date().toISOString().split('T')[0];
+  document.getElementById('noteInput').value='';
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('previewBox').style.display='none';
+  document.getElementById('amtHint').textContent='';
+  document.getElementById('dcaInfoBox').style.display='none';
+  document.getElementById('searchResults').style.display='none';
+  document.getElementById('coinSearch').value='';
+
+  if(coinId){
+    const item = portfolio.find(p=>p.coinId===coinId);
+    if(!item) return;
+    selCoin = {id:item.coinId, name:item.name, symbol:item.symbol, image:item.image, price:priceCache[item.coinId]?.usd};
+    document.getElementById('modalTitle').textContent=`Add Buy — ${item.name}`;
+    document.getElementById('searchSection').style.display='none';
+    document.getElementById('clearCoinBtn').style.display='none';
+    showSelCoin();
+    showDCAInfo(item);
+  } else {
+    document.getElementById('modalTitle').textContent='Add Buy';
+    document.getElementById('searchSection').style.display='block';
+    document.getElementById('clearCoinBtn').style.display='';
+    document.getElementById('selCoinBox').style.display='none';
+  }
+  document.getElementById('modal').style.display='flex';
+}
+
+function showDCAInfo(item){
+  const {qty,avg,count} = dca(item);
+  document.getElementById('di-avg').textContent = avg>0?fUSD(avg):'—';
+  document.getElementById('di-qty').textContent = fNum(qty)+' '+item.symbol;
+  document.getElementById('di-count').textContent = count;
+  document.getElementById('dcaInfoBox').style.display='block';
+}
+
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+document.getElementById('openAddBtn').addEventListener('click',()=>openModal(null));
+document.getElementById('cancelBtn').addEventListener('click',closeModal);
+
+// ── Search ────────────────────────────────
+document.getElementById('coinSearch').addEventListener('input',e=>{
+  clearTimeout(searchTO);
+  const q=e.target.value.trim();
+  if(q.length<2){ document.getElementById('searchResults').style.display='none'; return; }
+  document.getElementById('searchSpinner').style.display='block';
+  searchTO=setTimeout(async()=>{
+    try{ await renderSearch(await searchAPI(q)); }
+    catch{ document.getElementById('searchResults').style.display='none'; }
+    finally{ document.getElementById('searchSpinner').style.display='none'; }
+  },400);
+});
+
+async function renderSearch(coins){
+  const box=document.getElementById('searchResults');
+  if(!coins.length){ box.innerHTML='<div class="no-results">No coins found.</div>'; box.style.display='block'; return; }
+  let prices={};
+  try{
+    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coins.map(c=>c.id).join(',')}&vs_currencies=usd`);
+    prices=await r.json();
+  }catch{}
+  box.innerHTML=coins.map(c=>`
+    <div class="search-item" onclick="pickCoin('${c.id}','${c.name.replace(/'/g,"\\'")}','${c.symbol.toUpperCase()}','${c.large||c.thumb||''}')">
+      <img src="${c.thumb}" width="28" height="28" style="border-radius:50%" onerror="this.style.display='none'" />
+      <div><div class="s-name">${c.name}</div><div class="s-sym">${c.symbol.toUpperCase()}</div></div>
+      <div class="s-price">${prices[c.id]?.usd?fUSD(prices[c.id].usd):''}</div>
+    </div>`).join('');
+  box.style.display='block';
+}
+
+async function pickCoin(id,name,symbol,image){
+  selCoin={id,name,symbol,image};
+  document.getElementById('searchResults').style.display='none';
+  document.getElementById('coinSearch').value='';
+  try{
+    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`);
+    const d=await r.json();
+    priceCache[id]=d[id]||{};
+    selCoin.price=d[id]?.usd;
+  }catch{}
+  const existing=portfolio.find(p=>p.coinId===id);
+  if(existing) showDCAInfo(existing);
+  else document.getElementById('dcaInfoBox').style.display='none';
+  showSelCoin();
+  updatePreview();
+}
+
+function showSelCoin(){
+  document.getElementById('selName').textContent=`${selCoin.name} (${selCoin.symbol})`;
+  document.getElementById('selPrice').textContent=selCoin.price
+    ?`Current: ${fUSD(selCoin.price)}`
+    :(priceCache[selCoin.id]?.usd?`Current: ${fUSD(priceCache[selCoin.id].usd)}`:'Fetching...');
+  const img=document.getElementById('selImg');
+  if(selCoin.image){img.src=selCoin.image;img.style.display='';}else{img.style.display='none';}
+  document.getElementById('selCoinBox').style.display='flex';
+  validateForm();
+}
+function clearCoin(){
+  selCoin=null;
+  document.getElementById('selCoinBox').style.display='none';
+  document.getElementById('dcaInfoBox').style.display='none';
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('previewBox').style.display='none';
+  document.getElementById('amtHint').textContent='';
+}
+
+// ── Preview ───────────────────────────────
+document.getElementById('amtInput').addEventListener('input',()=>{validateForm();updatePreview();});
+document.getElementById('buyInput').addEventListener('input',updatePreview);
+
+function validateForm(){
+  const amt=parseFloat(document.getElementById('amtInput').value);
+  document.getElementById('saveBtn').disabled=!(selCoin&&amt>0&&!isNaN(amt));
+  if(selCoin&&amt>0){
+    const p=selCoin.price||priceCache[selCoin.id]?.usd||0;
+    document.getElementById('amtHint').textContent=p?`≈ ${fUSD(p*amt)}`:'';
+  } else { document.getElementById('amtHint').textContent=''; }
+}
+
+function updatePreview(){
+  const amt=parseFloat(document.getElementById('amtInput').value);
+  const buy=parseFloat(document.getElementById('buyInput').value);
+  if(!selCoin||!amt||isNaN(amt)){ document.getElementById('previewBox').style.display='none'; return; }
+  const price=selCoin.price||priceCache[selCoin.id]?.usd||0;
+
+  // Calc new weighted avg
+  const existing=portfolio.find(p=>p.coinId===selCoin.id);
+  let newAvg=buy>0?buy:0, newQty=amt;
+  if(existing&&buy>0){
+    const {qty:eQty,cost:eCost}=dca(existing);
+    newQty=eQty+amt;
+    newAvg=(eCost+buy*amt)/newQty;
+  }
+
+  document.getElementById('pv-val').textContent=price>0?fUSD(price*amt):'—';
+  document.getElementById('pv-avg').textContent=newAvg>0?fUSD(newAvg):'—';
+  document.getElementById('pv-qty').textContent=fNum(newQty)+' '+(selCoin.symbol||'');
+  if(newAvg>0&&price>0){
+    const pct=(price-newAvg)/newAvg*100;
+    document.getElementById('pv-pnl').textContent=fPct(pct);
+    document.getElementById('pv-pnl').className='prev-value '+(pct>=0?'pos':'neg');
+  } else {
+    document.getElementById('pv-pnl').textContent='—';
+    document.getElementById('pv-pnl').className='prev-value';
+  }
+  document.getElementById('previewBox').style.display='grid';
+}
+
+// ── Save ──────────────────────────────────
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  const amt=parseFloat(document.getElementById('amtInput').value);
+  const buy=parseFloat(document.getElementById('buyInput').value)||0;
+  const date=document.getElementById('dateInput').value;
+  const note=document.getElementById('noteInput').value.trim();
+  if(!selCoin||!amt||isNaN(amt)) return;
+
+  const newBuy={id:uid(),qty:amt,price:buy,date,note};
+  const existing=portfolio.find(p=>p.coinId===selCoin.id);
+  if(existing){
+    existing.buys.push(newBuy);
+    if(selCoin.image&&!existing.image) existing.image=selCoin.image;
+  } else {
+    portfolio.push({coinId:selCoin.id,name:selCoin.name,symbol:selCoin.symbol,image:selCoin.image||'',buys:[newBuy]});
+  }
+  openCard=selCoin.id;
+  save(); closeModal(); refresh();
+});
+
+// ── PWA ──────────────────────────────────
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  if(!localStorage.getItem('ct_banner_closed')) document.getElementById('installBanner').style.display='flex';
+});
+document.getElementById('installBtn').addEventListener('click',async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt=null; document.getElementById('installBanner').style.display='none';
+});
+document.getElementById('closeBanner').addEventListener('click',()=>{
+  document.getElementById('installBanner').style.display='none';
+  localStorage.setItem('ct_banner_closed','1');
+});
+document.getElementById('refreshBtn').addEventListener('click',refresh);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
+
+render();
+refresh();
+setInterval(refresh,60000);
+</script>
+</body>
+</html>
