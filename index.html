@@ -173,6 +173,33 @@
 
     .pos{color:var(--green)} .neg{color:var(--red)}
 
+    /* ── LONG/SHORT TOGGLE ── */
+    .pos-toggle{display:flex;gap:0;margin-bottom:16px;background:var(--bg3);border-radius:12px;padding:4px;border:1.5px solid var(--border)}
+    .pos-btn{flex:1;padding:9px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans);letter-spacing:.03em;transition:all .2s;background:transparent;color:var(--muted)}
+    .pos-btn.active-long{background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 2px 8px rgba(5,150,105,.3)}
+    .pos-btn.active-short{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.3)}
+
+    /* ── SECTION HEADER ── */
+    .section-header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin:18px 0 8px}
+    .sh-left{display:flex;align-items:center;gap:9px}
+    .sh-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .sh-icon.long{background:rgba(5,150,105,.12)}
+    .sh-icon.short{background:rgba(220,38,38,.12)}
+    .sh-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;font-family:var(--mono)}
+    .sh-title.long{color:var(--green)}
+    .sh-title.short{color:var(--red)}
+    .sh-count{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px}
+    .sh-pnl{text-align:right}
+    .sh-pnl-val{font-size:13px;font-weight:700;font-family:var(--mono)}
+    .sh-pnl-pct{font-size:11px;font-family:var(--mono);margin-top:1px}
+    .section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:20px 16px 0}
+
+    /* ── EMPTY SECTION ── */
+    .section-empty{margin:0 12px 4px;padding:20px;text-align:center;border-radius:14px;border:1.5px dashed}
+    .section-empty.long{background:rgba(5,150,105,.04);border-color:rgba(5,150,105,.2)}
+    .section-empty.short{background:rgba(220,38,38,.04);border-color:rgba(220,38,38,.2)}
+    .section-empty p{font-size:12px;color:var(--muted);margin-top:4px}
+
     /* Empty */
     .empty{text-align:center;padding:60px 28px}
     .empty-icon{font-size:52px;margin-bottom:14px}
@@ -315,7 +342,42 @@
       <button class="add-btn" id="openAddBtn">＋ Add Buy</button>
     </div>
     <div class="update-time" id="updateTime"></div>
-    <div class="holding-list" id="holdingList"></div>
+    <!-- Long Section -->
+    <div id="longSection">
+      <div class="section-header">
+        <div class="sh-left">
+          <div class="sh-icon long">📈</div>
+          <div>
+            <div class="sh-title long">Long Positions</div>
+            <div class="sh-count" id="longCount">0 holdings</div>
+          </div>
+        </div>
+        <div class="sh-pnl" id="longPnl" style="display:none">
+          <div class="sh-pnl-val" id="longPnlAbs">—</div>
+          <div class="sh-pnl-pct" id="longPnlPct">—</div>
+        </div>
+      </div>
+      <div class="holding-list" id="longList"></div>
+    </div>
+    <!-- Divider -->
+    <div class="section-divider"></div>
+    <!-- Short Section -->
+    <div id="shortSection">
+      <div class="section-header">
+        <div class="sh-left">
+          <div class="sh-icon short">📉</div>
+          <div>
+            <div class="sh-title short">Short Positions</div>
+            <div class="sh-count" id="shortCount">0 holdings</div>
+          </div>
+        </div>
+        <div class="sh-pnl" id="shortPnl" style="display:none">
+          <div class="sh-pnl-val" id="shortPnlAbs">—</div>
+          <div class="sh-pnl-pct" id="shortPnlPct">—</div>
+        </div>
+      </div>
+      <div class="holding-list" id="shortList" style="padding-bottom:80px"></div>
+    </div>
   </div>
 </div>
 
@@ -324,6 +386,10 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modalTitle">Add Buy</div>
+    <div class="pos-toggle" id="posToggle">
+      <button class="pos-btn active-long" id="btnLong" onclick="setPos('long')">📈 Long</button>
+      <button class="pos-btn" id="btnShort" onclick="setPos('short')">📉 Short</button>
+    </div>
     <div id="searchSection">
       <div class="form-group">
         <label class="form-label">Search Coin</label>
@@ -394,9 +460,14 @@ import{getFirestore,doc,setDoc,onSnapshot}from"https://www.gstatic.com/firebasej
 const fbApp=initializeApp({apiKey:"AIzaSyB1QOEigtYy5EQg897pB9HovpEnmbT7Qlg",authDomain:"cryptotrack-mis.firebaseapp.com",projectId:"cryptotrack-mis",storageBucket:"cryptotrack-mis.firebasestorage.app",messagingSenderId:"609217250659",appId:"1:609217250659:web:c266188fbe826dd407ff56"});
 const auth=getAuth(fbApp),db=getFirestore(fbApp),provider=new GoogleAuthProvider();
 
-let portfolio=[],priceCache={},selCoin=null,searchTO=null,openCard=null,currentUser=null,unsub=null;
+let portfolio=[],priceCache={},selCoin=null,searchTO=null,openCard=null,currentUser=null,unsub=null,posType='long';
 
 const uid=()=>Math.random().toString(36).slice(2,9);
+window.setPos=t=>{
+  posType=t;
+  document.getElementById('btnLong').className='pos-btn'+(t==='long'?' active-long':'');
+  document.getElementById('btnShort').className='pos-btn'+(t==='short'?' active-short':'');
+};
 const PAL=['#5b4fcf','#3b7de8','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#be185d','#0d9488','#ca8a04'];
 const col=i=>PAL[i%PAL.length];
 
@@ -512,19 +583,81 @@ async function doRefresh(){
 window.doRefresh=doRefresh;
 
 // Render
+function buildCard(item, idx){
+  const price=priceCache[item.coinId]?.usd||0;
+  const ch24=priceCache[item.coinId]?.usd_24h_change;
+  const{qty,cost,avg,count}=dca(item);
+  const val=price*qty;
+  const isShort=item.posType==='short';
+  const pnl=cost>0?(isShort?cost-val:val-cost):null;
+  const pnlPct=(cost>0&&price>0)?(isShort?(avg-price)/avg*100:(price-avg)/avg*100):null;
+  const color=col(idx);const isOpen=openCard===item.coinId;
+  const buyRows=item.buys.map((b,bi)=>{
+    const bPnl=(b.price>0&&price>0)?(isShort?(b.price-price)/b.price*100:(price-b.price)/b.price*100):null;
+    return`<div class="buy-row"><div class="buy-num">${bi+1}</div><div class="buy-info"><div class="buy-main"><span class="buy-qty">${fNum(b.qty)} ${item.symbol}</span><span class="buy-val">${price>0?fUSD(price*b.qty):'—'}</span></div><div class="buy-meta"><span class="buy-price-lbl">${b.price>0?'Bought @ '+fUSD(b.price):'No buy price'}</span>${bPnl!==null?`<span class="buy-pnl ${bPnl>=0?'pos':'neg'}">${fPct(bPnl)}</span>`:''}</div>${b.date||b.note?`<div class="buy-date">${[b.date,b.note].filter(Boolean).join(' · ')}</div>`:''}</div><button class="buy-del" onclick="delBuy('${item.coinId}','${b.id}')">✕</button></div>`;
+  }).join('');
+  const div=document.createElement('div');
+  div.className='coin-card'+(isOpen?' open':'');
+  div.innerHTML=`<style>.coin-card:nth-child(${idx+1}) .card-header::before{background:${color}}</style>
+    <div class="card-header" onclick="toggleCard('${item.coinId}')">
+      ${item.image?`<img class="coin-img" src="${item.image}" alt="${item.symbol}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-icon-fb" style="background:${color};display:none">${item.symbol.charAt(0)}</div>`:`<div class="coin-icon-fb" style="background:${color}">${item.symbol.charAt(0)}</div>`}
+      <div class="coin-main">
+        <div class="coin-top">
+          <div><div class="coin-name">${item.name} <span class="chevron">▼</span></div><div class="coin-sub">${fNum(qty)} ${item.symbol} · ${count} buy${count>1?'s':''}</div></div>
+          <div class="coin-right"><div class="coin-value">${price>0?fUSD(val):'—'}</div>${ch24!==undefined?`<div class="coin-24h ${ch24>=0?'pos':'neg'}">${fPct(ch24)} 24h</div>`:''}</div>
+        </div>
+        <div class="coin-bottom">
+          <div class="coin-price-lbl">${price>0?fUSD(price):'Loading...'}</div>
+          ${pnlPct!==null?`<div class="coin-pnl ${pnlPct>=0?'pos':'neg'}">${fPct(pnlPct)}</div>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="coin-panel">
+      <div class="dca-stats">
+        <div class="dca-stat"><div class="dca-stat-label">Avg Buy Price</div><div class="dca-stat-value">${avg>0?fUSD(avg):'—'}</div></div>
+        <div class="dca-stat"><div class="dca-stat-label">Total Invested</div><div class="dca-stat-value">${cost>0?fUSD(cost):'—'}</div></div>
+        <div class="dca-stat"><div class="dca-stat-label">P&L (USD)</div><div class="dca-stat-value ${pnl!==null?(pnl>=0?'pos':'neg'):''}">${pnl!==null?(pnl>=0?'+':'')+fUSD(Math.abs(pnl)):'—'}</div></div>
+      </div>
+      <div class="buys-header"><div class="buys-title">Buy History (${count})</div><button class="buy-add-btn" onclick="openModal('${item.coinId}')">＋ Add Buy</button></div>
+      ${buyRows}
+      <div class="card-actions"><button class="ca-del" onclick="delCoin('${item.coinId}')">🗑 Remove Coin</button></div>
+    </div>`;
+  return div;
+}
+
+function renderSection(items, listId, type){
+  const list=document.getElementById(listId);
+  list.innerHTML='';
+  if(!items.length){
+    list.innerHTML=`<div class="section-empty ${type}"><div style="font-size:28px">${type==='long'?'📈':'📉'}</div><p>No ${type} positions yet</p></div>`;
+    return;
+  }
+  items.forEach((item,i)=>list.appendChild(buildCard(item,portfolio.indexOf(item))));
+}
+
 function render(){
-  const list=document.getElementById('holdingList');
   if(!portfolio.length){
     document.getElementById('summaryCard').style.display='none';
     document.getElementById('allocWrap').style.display='none';
     document.getElementById('holdingsCount').textContent='Holdings';
-    list.innerHTML=`<div class="empty"><div class="empty-icon">🪙</div><div class="empty-title">Portfolio is empty</div><div class="empty-sub">যেকোনো coin search করে buy record করুন। একই coin একাধিকবার buy করলে Average Price auto-calculate হবে।</div><button class="add-btn" style="margin:0 auto;display:flex" onclick="openModal(null)">＋ Add First Buy</button></div>`;
+    renderSection([],'longList','long');
+    renderSection([],'shortList','short');
+    document.getElementById('longCount').textContent='0 holdings';
+    document.getElementById('shortCount').textContent='0 holdings';
+    document.getElementById('longPnl').style.display='none';
+    document.getElementById('shortPnl').style.display='none';
     return;
   }
   document.getElementById('holdingsCount').textContent=`Holdings (${portfolio.length})`;
 
+  // Total portfolio stats (short positions count as: profit if price dropped)
   let totVal=0,totInv=0;
-  portfolio.forEach(item=>{const p=priceCache[item.coinId]?.usd||0;const{qty,cost}=dca(item);totVal+=p*qty;totInv+=cost;});
+  portfolio.forEach(item=>{
+    const p=priceCache[item.coinId]?.usd||0;
+    const{qty,cost}=dca(item);
+    totInv+=cost;
+    totVal+=item.posType==='short'?(2*cost-p*qty):(p*qty);
+  });
   document.getElementById('summaryCard').style.display='block';
   document.getElementById('totalValue').textContent=fUSD(totVal);
   if(totInv>0){
@@ -539,73 +672,54 @@ function render(){
     ['totInv','totPnlAbs','totPnlPct'].forEach(id=>{document.getElementById(id).textContent='—';document.getElementById(id).className='sg-value';});
   }
 
-  // Alloc
+  // Alloc bar (based on market value)
   const aw=document.getElementById('allocWrap');
-  if(portfolio.length>1&&totVal>0){
+  const allocBase=portfolio.reduce((s,item)=>{const p=priceCache[item.coinId]?.usd||0;const{qty}=dca(item);return s+p*qty;},0);
+  if(portfolio.length>1&&allocBase>0){
     aw.style.display='block';
     document.getElementById('allocBar').innerHTML=portfolio.map((item,i)=>{
       const p=priceCache[item.coinId]?.usd||0;const{qty}=dca(item);
-      return`<div class="alloc-seg" style="flex:${(p*qty/totVal)*100};background:${col(i)}"></div>`;
+      return`<div class="alloc-seg" style="flex:${(p*qty/allocBase)*100};background:${col(i)}"></div>`;
     }).join('');
     document.getElementById('allocLegend').innerHTML=portfolio.map((item,i)=>{
       const p=priceCache[item.coinId]?.usd||0;const{qty}=dca(item);
-      const pct=totVal>0?(p*qty/totVal)*100:0;
+      const pct=allocBase>0?(p*qty/allocBase)*100:0;
       return`<div class="alloc-item"><div class="alloc-dot" style="background:${col(i)}"></div>${item.symbol} ${pct.toFixed(1)}%</div>`;
     }).join('');
   }else{aw.style.display='none';}
 
-  // Cards
-  list.innerHTML='';
-  portfolio.forEach((item,idx)=>{
-    const price=priceCache[item.coinId]?.usd||0;
-    const ch24=priceCache[item.coinId]?.usd_24h_change;
-    const{qty,cost,avg,count}=dca(item);
-    const val=price*qty,pnl=cost>0?val-cost:null;
-    const pnlPct=(cost>0&&price>0)?(price-avg)/avg*100:null;
-    const color=col(idx),isOpen=openCard===item.coinId;
+  // Split long / short
+  const longs=portfolio.filter(p=>!p.posType||p.posType==='long');
+  const shorts=portfolio.filter(p=>p.posType==='short');
 
-    const buyRows=item.buys.map((b,bi)=>{
-      const bPnl=(b.price>0&&price>0)?(price-b.price)/b.price*100:null;
-      return`<div class="buy-row">
-        <div class="buy-num">${bi+1}</div>
-        <div class="buy-info">
-          <div class="buy-main"><span class="buy-qty">${fNum(b.qty)} ${item.symbol}</span><span class="buy-val">${price>0?fUSD(price*b.qty):'—'}</span></div>
-          <div class="buy-meta"><span class="buy-price-lbl">${b.price>0?'Bought @ '+fUSD(b.price):'No buy price'}</span>${bPnl!==null?`<span class="buy-pnl ${bPnl>=0?'pos':'neg'}">${fPct(bPnl)}</span>`:''}</div>
-          ${b.date||b.note?`<div class="buy-date">${[b.date,b.note].filter(Boolean).join(' · ')}</div>`:''}
-        </div>
-        <button class="buy-del" onclick="delBuy('${item.coinId}','${b.id}')">✕</button>
-      </div>`;
-    }).join('');
+  // Long section summary
+  document.getElementById('longCount').textContent=`${longs.length} holding${longs.length!==1?'s':''}`;
+  if(longs.length>0){
+    let lInv=0,lVal=0;
+    longs.forEach(item=>{const p=priceCache[item.coinId]?.usd||0;const{qty,cost}=dca(item);lInv+=cost;lVal+=p*qty;});
+    const lPnl=lVal-lInv,lPct=lInv>0?(lPnl/lInv)*100:0;
+    document.getElementById('longPnl').style.display='block';
+    document.getElementById('longPnlAbs').textContent=(lPnl>=0?'+':'')+fUSD(Math.abs(lPnl));
+    document.getElementById('longPnlAbs').className='sh-pnl-val '+(lPnl>=0?'pos':'neg');
+    document.getElementById('longPnlPct').textContent=fPct(lPct);
+    document.getElementById('longPnlPct').className='sh-pnl-pct '+(lPct>=0?'pos':'neg');
+  }else{document.getElementById('longPnl').style.display='none';}
 
-    const div=document.createElement('div');
-    div.className='coin-card'+(isOpen?' open':'');
-    div.innerHTML=`
-      <style>.coin-card:nth-child(${idx+1}) .card-header::before{background:${color}}</style>
-      <div class="card-header" onclick="toggleCard('${item.coinId}')">
-        ${item.image?`<img class="coin-img" src="${item.image}" alt="${item.symbol}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-icon-fb" style="background:${color};display:none">${item.symbol.charAt(0)}</div>`:`<div class="coin-icon-fb" style="background:${color}">${item.symbol.charAt(0)}</div>`}
-        <div class="coin-main">
-          <div class="coin-top">
-            <div><div class="coin-name">${item.name} <span class="chevron">▼</span></div><div class="coin-sub">${fNum(qty)} ${item.symbol} · ${count} buy${count>1?'s':''}</div></div>
-            <div class="coin-right"><div class="coin-value">${price>0?fUSD(val):'—'}</div>${ch24!==undefined?`<div class="coin-24h ${ch24>=0?'pos':'neg'}">${fPct(ch24)} 24h</div>`:''}</div>
-          </div>
-          <div class="coin-bottom">
-            <div class="coin-price-lbl">${price>0?fUSD(price):'Loading...'}</div>
-            ${pnlPct!==null?`<div class="coin-pnl ${pnlPct>=0?'pos':'neg'}">${fPct(pnlPct)}</div>`:''}
-          </div>
-        </div>
-      </div>
-      <div class="coin-panel">
-        <div class="dca-stats">
-          <div class="dca-stat"><div class="dca-stat-label">Avg Buy Price</div><div class="dca-stat-value">${avg>0?fUSD(avg):'—'}</div></div>
-          <div class="dca-stat"><div class="dca-stat-label">Total Invested</div><div class="dca-stat-value">${cost>0?fUSD(cost):'—'}</div></div>
-          <div class="dca-stat"><div class="dca-stat-label">P&L (USD)</div><div class="dca-stat-value ${pnl!==null?(pnl>=0?'pos':'neg'):''}">${pnl!==null?(pnl>=0?'+':'')+fUSD(Math.abs(pnl)):'—'}</div></div>
-        </div>
-        <div class="buys-header"><div class="buys-title">Buy History (${count})</div><button class="buy-add-btn" onclick="openModal('${item.coinId}')">＋ Add Buy</button></div>
-        ${buyRows}
-        <div class="card-actions"><button class="ca-del" onclick="delCoin('${item.coinId}')">🗑 Remove Coin</button></div>
-      </div>`;
-    list.appendChild(div);
-  });
+  // Short section summary
+  document.getElementById('shortCount').textContent=`${shorts.length} holding${shorts.length!==1?'s':''}`;
+  if(shorts.length>0){
+    let sInv=0,sVal=0;
+    shorts.forEach(item=>{const p=priceCache[item.coinId]?.usd||0;const{qty,cost}=dca(item);sInv+=cost;sVal+=p*qty;});
+    const sPnl=sInv-sVal,sPct=sInv>0?(sPnl/sInv)*100:0;
+    document.getElementById('shortPnl').style.display='block';
+    document.getElementById('shortPnlAbs').textContent=(sPnl>=0?'+':'')+fUSD(Math.abs(sPnl));
+    document.getElementById('shortPnlAbs').className='sh-pnl-val '+(sPnl>=0?'pos':'neg');
+    document.getElementById('shortPnlPct').textContent=fPct(sPct);
+    document.getElementById('shortPnlPct').className='sh-pnl-pct '+(sPct>=0?'pos':'neg');
+  }else{document.getElementById('shortPnl').style.display='none';}
+
+  renderSection(longs,'longList','long');
+  renderSection(shorts,'shortList','short');
 }
 
 window.toggleCard=id=>{openCard=openCard===id?null:id;render();};
@@ -637,6 +751,8 @@ window.openModal=coinId=>{
   if(coinId){
     const item=portfolio.find(p=>p.coinId===coinId);if(!item)return;
     selCoin={id:item.coinId,name:item.name,symbol:item.symbol,image:item.image,price:priceCache[item.coinId]?.usd};
+    setPos(item.posType||'long');
+    document.getElementById('posToggle').style.display='none';
     document.getElementById('modalTitle').textContent=`Add Buy — ${item.name}`;
     document.getElementById('searchSection').style.display='none';
     document.getElementById('clearCoinBtn').style.display='none';
@@ -646,6 +762,8 @@ window.openModal=coinId=>{
     document.getElementById('searchSection').style.display='block';
     document.getElementById('clearCoinBtn').style.display='';
     document.getElementById('selCoinBox').style.display='none';
+    document.getElementById('posToggle').style.display='flex';
+    setPos('long');
   }
   document.getElementById('modal').style.display='flex';
 };
@@ -753,7 +871,7 @@ document.getElementById('saveBtn').addEventListener('click',()=>{
   const newBuy={id:uid(),qty:amt,price:buy,date,note};
   const ex=portfolio.find(p=>p.coinId===selCoin.id);
   if(ex){ex.buys.push(newBuy);if(selCoin.image&&!ex.image)ex.image=selCoin.image;}
-  else{portfolio.push({coinId:selCoin.id,name:selCoin.name,symbol:selCoin.symbol,image:selCoin.image||'',buys:[newBuy]});}
+  else{portfolio.push({coinId:selCoin.id,name:selCoin.name,symbol:selCoin.symbol,image:selCoin.image||'',posType,buys:[newBuy]});}
   openCard=selCoin.id;
   saveCloud();closeModal();doRefresh();
 });
