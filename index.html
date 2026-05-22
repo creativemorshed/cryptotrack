@@ -607,15 +607,17 @@ function buildCard(item, idx){
   const isShort=item.posType==='short';
   const pnl=cost>0?(isShort?cost-val:val-cost):null;
   const pnlPct=(cost>0&&price>0)?(isShort?(avg-price)/avg*100:(price-avg)/avg*100):null;
-  const color=col(idx);const isOpen=openCard===item.coinId;
+  const color=col(idx);
+  const cardKey=item.coinId+'-'+(item.posType||'long');
+  const isOpen=openCard===cardKey;
   const buyRows=item.buys.map((b,bi)=>{
     const bPnl=(b.price>0&&price>0)?(isShort?(b.price-price)/b.price*100:(price-b.price)/b.price*100):null;
-    return`<div class="buy-row"><div class="buy-num">${bi+1}</div><div class="buy-info"><div class="buy-main"><span class="buy-qty">${fNum(b.qty)} ${item.symbol}</span><span class="buy-val">${price>0?fUSD(price*b.qty):'—'}</span></div><div class="buy-meta"><span class="buy-price-lbl">${b.price>0?'Bought @ '+fUSD(b.price):'No buy price'}</span>${bPnl!==null?`<span class="buy-pnl ${bPnl>=0?'pos':'neg'}">${fPct(bPnl)}</span>`:''}</div>${b.date||b.note?`<div class="buy-date">${[b.date,b.note].filter(Boolean).join(' · ')}</div>`:''}</div><button class="buy-del" onclick="delBuy('${item.coinId}','${b.id}')">✕</button></div>`;
+    return`<div class="buy-row"><div class="buy-num">${bi+1}</div><div class="buy-info"><div class="buy-main"><span class="buy-qty">${fNum(b.qty)} ${item.symbol}</span><span class="buy-val">${price>0?fUSD(price*b.qty):'—'}</span></div><div class="buy-meta"><span class="buy-price-lbl">${b.price>0?'Bought @ '+fUSD(b.price):'No buy price'}</span>${bPnl!==null?`<span class="buy-pnl ${bPnl>=0?'pos':'neg'}">${fPct(bPnl)}</span>`:''}</div>${b.date||b.note?`<div class="buy-date">${[b.date,b.note].filter(Boolean).join(' · ')}</div>`:''}</div><button class="buy-del" onclick="delBuy('${cardKey}','${b.id}')">✕</button></div>`;
   }).join('');
   const div=document.createElement('div');
   div.className='coin-card'+(isOpen?' open':'');
   div.innerHTML=`<style>.coin-card:nth-child(${idx+1}) .card-header::before{background:${color}}</style>
-    <div class="card-header" onclick="toggleCard('${item.coinId}')">
+    <div class="card-header" onclick="toggleCard('${cardKey}')">
       ${item.image?`<img class="coin-img" src="${item.image}" alt="${item.symbol}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-icon-fb" style="background:${color};display:none">${item.symbol.charAt(0)}</div>`:`<div class="coin-icon-fb" style="background:${color}">${item.symbol.charAt(0)}</div>`}
       <div class="coin-main">
         <div class="coin-top">
@@ -634,9 +636,9 @@ function buildCard(item, idx){
         <div class="dca-stat"><div class="dca-stat-label">Total Invested</div><div class="dca-stat-value">${cost>0?fUSD(cost):'—'}</div></div>
         <div class="dca-stat"><div class="dca-stat-label">P&L (USD)</div><div class="dca-stat-value ${pnl!==null?(pnl>=0?'pos':'neg'):''}">${pnl!==null?(pnl>=0?'+':'')+fUSD(Math.abs(pnl)):'—'}</div></div>
       </div>
-      <div class="buys-header"><div class="buys-title">Buy History (${count})</div><button class="buy-add-btn" onclick="openModal('${item.coinId}')">＋ Add Buy</button></div>
+      <div class="buys-header"><div class="buys-title">Buy History (${count})</div><button class="buy-add-btn" onclick="openModal('${cardKey}')">＋ Add Buy</button></div>
       ${buyRows}
-      <div class="card-actions"><button class="ca-del" onclick="delCoin('${item.coinId}')">🗑 Remove Coin</button></div>
+      <div class="card-actions"><button class="ca-del" onclick="delCoin('${cardKey}')">🗑 Remove Coin</button></div>
     </div>`;
   return div;
 }
@@ -742,17 +744,17 @@ function render(){
 }
 
 window.toggleCard=id=>{openCard=openCard===id?null:id;render();};
-window.delBuy=(coinId,buyId)=>{
-  const item=portfolio.find(p=>p.coinId===coinId);if(!item)return;
-  if(item.buys.length===1){if(!confirm(`Last buy. Remove ${item.name}?`))return;portfolio=portfolio.filter(p=>p.coinId!==coinId);if(openCard===coinId)openCard=null;}
+window.delBuy=(cardKey,buyId)=>{
+  const item=portfolio.find(p=>(p.coinId+'-'+p.posType)===cardKey);if(!item)return;
+  if(item.buys.length===1){if(!confirm(`Last buy. Remove ${item.name}?`))return;portfolio=portfolio.filter(p=>(p.coinId+'-'+p.posType)!==cardKey);if(openCard===cardKey)openCard=null;}
   else{item.buys=item.buys.filter(b=>b.id!==buyId);}
   saveCloud();render();
 };
-window.delCoin=coinId=>{
-  const item=portfolio.find(p=>p.coinId===coinId);
-  if(!confirm(`Remove ${item?.name} and all ${item?.buys.length} buy(s)?`))return;
-  portfolio=portfolio.filter(p=>p.coinId!==coinId);
-  if(openCard===coinId)openCard=null;
+window.delCoin=cardKey=>{
+  const item=portfolio.find(p=>(p.coinId+'-'+p.posType)===cardKey);
+  if(!confirm(`Remove ${item?.name} (${item?.posType?.toUpperCase()}) and all ${item?.buys.length} buy(s)?`))return;
+  portfolio=portfolio.filter(p=>(p.coinId+'-'+p.posType)!==cardKey);
+  if(openCard===cardKey)openCard=null;
   saveCloud();render();
 };
 
@@ -768,7 +770,7 @@ window.openModal=coinId=>{
   document.getElementById('searchResults').style.display='none';
   document.getElementById('coinSearch').value='';
   if(coinId){
-    const item=portfolio.find(p=>p.coinId===coinId);if(!item)return;
+    const item=portfolio.find(p=>(p.coinId+'-'+p.posType)===coinId);if(!item)return;
     selCoin={id:item.coinId,name:item.name,symbol:item.symbol,image:item.image,price:priceCache[item.coinId]?.usd};
     setPos(item.posType||'long');
     document.getElementById('posToggle').style.display='none';
@@ -830,7 +832,7 @@ window.pickCoin=async(id,name,symbol,image)=>{
   document.getElementById('searchResults').style.display='none';
   document.getElementById('coinSearch').value='';
   try{const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`);const d=await r.json();priceCache[id]=d[id]||{};selCoin.price=d[id]?.usd;}catch{}
-  const ex=portfolio.find(p=>p.coinId===id);
+  const ex=portfolio.find(p=>p.coinId===id&&p.posType===posType);
   if(ex)showDCAInfo(ex);else document.getElementById('dcaInfoBox').style.display='none';
   showSelCoin();updatePreview();
 };
@@ -867,7 +869,7 @@ function updatePreview(){
   const buy=parseFloat(document.getElementById('buyInput').value);
   if(!selCoin||!amt||isNaN(amt)){document.getElementById('previewBox').style.display='none';return;}
   const price=selCoin.price||priceCache[selCoin.id]?.usd||0;
-  const ex=portfolio.find(p=>p.coinId===selCoin.id);
+  const ex=portfolio.find(p=>p.coinId===selCoin.id&&p.posType===posType);
   let newAvg=buy>0?buy:0,newQty=amt;
   if(ex&&buy>0){const{qty:eq,cost:ec}=dca(ex);newQty=eq+amt;newAvg=(ec+buy*amt)/newQty;}
   document.getElementById('pv-val').textContent=price>0?fUSD(price*amt):'—';
@@ -888,10 +890,10 @@ document.getElementById('saveBtn').addEventListener('click',()=>{
   const note=document.getElementById('noteInput').value.trim();
   if(!selCoin||!amt||isNaN(amt))return;
   const newBuy={id:uid(),qty:amt,price:buy,date,note};
-  const ex=portfolio.find(p=>p.coinId===selCoin.id);
+  const ex=portfolio.find(p=>p.coinId===selCoin.id&&p.posType===posType);
   if(ex){ex.buys.push(newBuy);if(selCoin.image&&!ex.image)ex.image=selCoin.image;}
   else{portfolio.push({coinId:selCoin.id,name:selCoin.name,symbol:selCoin.symbol,image:selCoin.image||'',posType,buys:[newBuy]});}
-  openCard=selCoin.id;
+  openCard=selCoin.id+'-'+posType;
   saveCloud();closeModal();doRefresh();
 });
 
