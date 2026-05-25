@@ -180,25 +180,23 @@
     .pos-btn.active-short{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;box-shadow:0 2px 8px rgba(220,38,38,.3)}
 
     /* ── SECTION HEADER ── */
-    .section-header{margin:12px 12px 0;border-radius:18px;padding:20px;cursor:pointer;user-select:none;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+    .section-header{margin:12px 12px 0;border-radius:14px;padding:12px 16px;cursor:pointer;user-select:none;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
     .section-header:active{transform:scale(.98)}
-    .section-header.long{background:linear-gradient(135deg,#0d6e4a 0%,#1a8c5e 50%,#0a5c3e 100%);box-shadow:0 8px 24px rgba(13,110,74,.35),inset 0 1px 0 rgba(255,255,255,.12)}
-    .section-header.short{background:linear-gradient(135deg,#7c1111 0%,#a01818 50%,#6b0e0e 100%);box-shadow:0 8px 24px rgba(124,17,17,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+    .section-header.long{background:linear-gradient(135deg,#0d6e4a 0%,#1a8c5e 50%,#0a5c3e 100%);box-shadow:0 6px 18px rgba(13,110,74,.3),inset 0 1px 0 rgba(255,255,255,.12)}
+    .section-header.short{background:linear-gradient(135deg,#7c1111 0%,#a01818 50%,#6b0e0e 100%);box-shadow:0 6px 18px rgba(124,17,17,.3),inset 0 1px 0 rgba(255,255,255,.12)}
     .section-header.section-collapsed{opacity:.75}
-    .sh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-    .sh-label-row{display:flex;align-items:center;gap:8px}
-    .sh-emoji{font-size:18px}
-    .sh-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.6)}
-    .sh-chevron{font-size:11px;color:rgba(255,255,255,.5);transition:transform .25s;display:inline-block;margin-left:4px}
+    .sh-top{display:flex;align-items:center;justify-content:space-between}
+    .sh-label-row{display:flex;align-items:center;gap:7px}
+    .sh-emoji{font-size:16px}
+    .sh-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.75)}
+    .sh-chevron{font-size:10px;color:rgba(255,255,255,.5);transition:transform .25s;display:inline-block;margin-left:4px}
     .section-collapsed .sh-chevron{transform:rotate(-90deg)}
-    .sh-value{font-size:32px;font-weight:800;color:#fff;letter-spacing:-.02em;margin-bottom:14px}
-    .sh-bottom{display:flex;gap:0}
-    .sh-stat{flex:1}
-    .sh-stat:not(:last-child){padding-right:12px;border-right:1px solid rgba(255,255,255,.15);margin-right:12px}
-    .sh-stat-label{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.08em;margin-bottom:3px}
-    .sh-stat-value{font-size:14px;font-weight:700;color:rgba(255,255,255,.9);font-family:var(--mono)}
-    .sh-stat-value.pos{color:#6ee7b7}
-    .sh-stat-value.neg{color:#fca5a5}
+    .sh-right{text-align:right}
+    .sh-value{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.01em}
+    .sh-pnl-row{font-size:11px;font-weight:600;margin-top:1px}
+    .sh-pnl-row.pos{color:#6ee7b7}
+    .sh-pnl-row.neg{color:#fca5a5}
+    .sh-count-lbl{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
     .section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:20px 16px 0}
 
     /* ── EMPTY SECTION ── */
@@ -357,23 +355,12 @@
             <span class="sh-emoji">📈</span>
             <span class="sh-label">Long Positions <span class="sh-chevron">▼</span></span>
           </div>
-          <div style="font-size:11px;color:rgba(255,255,255,.45);font-family:var(--mono)" id="longCount">0 holdings</div>
-        </div>
-        <div class="sh-value" id="longValue">$0.00</div>
-        <div class="sh-bottom">
-          <div class="sh-stat">
-            <div class="sh-stat-label">INVESTED</div>
-            <div class="sh-stat-value" id="longInvested">—</div>
-          </div>
-          <div class="sh-stat">
-            <div class="sh-stat-label">P&L $</div>
-            <div class="sh-stat-value" id="longPnlAbs">—</div>
-          </div>
-          <div class="sh-stat">
-            <div class="sh-stat-label">P&L %</div>
-            <div class="sh-stat-value" id="longPnlPct">—</div>
+          <div class="sh-right">
+            <div class="sh-value" id="longValue">$0.00</div>
+            <div class="sh-pnl-row" id="longPnlRow">—</div>
           </div>
         </div>
+        <div class="sh-count-lbl" id="longCount">0 holdings</div>
       </div>
       <div class="holding-list" id="longList" style="display:none"></div>
     </div>
@@ -385,23 +372,12 @@
             <span class="sh-emoji">📉</span>
             <span class="sh-label">Short Positions <span class="sh-chevron">▼</span></span>
           </div>
-          <div style="font-size:11px;color:rgba(255,255,255,.45);font-family:var(--mono)" id="shortCount">0 holdings</div>
-        </div>
-        <div class="sh-value" id="shortValue">$0.00</div>
-        <div class="sh-bottom">
-          <div class="sh-stat">
-            <div class="sh-stat-label">INVESTED</div>
-            <div class="sh-stat-value" id="shortInvested">—</div>
-          </div>
-          <div class="sh-stat">
-            <div class="sh-stat-label">P&L $</div>
-            <div class="sh-stat-value" id="shortPnlAbs">—</div>
-          </div>
-          <div class="sh-stat">
-            <div class="sh-stat-label">P&L %</div>
-            <div class="sh-stat-value" id="shortPnlPct">—</div>
+          <div class="sh-right">
+            <div class="sh-value" id="shortValue">$0.00</div>
+            <div class="sh-pnl-row" id="shortPnlRow">—</div>
           </div>
         </div>
+        <div class="sh-count-lbl" id="shortCount">0 holdings</div>
       </div>
       <div class="holding-list" id="shortList" style="display:none;padding-bottom:80px"></div>
     </div>
@@ -688,7 +664,7 @@ function render(){
     renderSection([],'shortList','short');
     ['longCount','shortCount'].forEach(id=>document.getElementById(id).textContent='0 holdings');
     ['longValue','shortValue'].forEach(id=>document.getElementById(id).textContent='$0.00');
-    ['longInvested','shortInvested','longPnlAbs','shortPnlAbs','longPnlPct','shortPnlPct'].forEach(id=>document.getElementById(id).textContent='—');
+    ['longPnlRow','shortPnlRow'].forEach(id=>{const el=document.getElementById(id);el.textContent='—';el.className='sh-pnl-row';});
     return;
   }
   document.getElementById('holdingsCount').textContent=`Holdings (${portfolio.length})`;
@@ -741,11 +717,9 @@ function render(){
   longs.forEach(item=>{const p=priceCache[item.coinId]?.usd||0;const{qty,cost}=dca(item);lInv+=cost;lVal+=p*qty;});
   const lPnl=lVal-lInv,lPct=lInv>0?(lPnl/lInv)*100:0;
   document.getElementById('longValue').textContent=fUSD(lVal);
-  document.getElementById('longInvested').textContent=lInv>0?fUSD(lInv):'—';
-  document.getElementById('longPnlAbs').textContent=lInv>0?(lPnl>=0?'+':'')+fUSD(Math.abs(lPnl)):'—';
-  document.getElementById('longPnlAbs').className='sh-stat-value '+(lPnl>=0?'pos':'neg');
-  document.getElementById('longPnlPct').textContent=lInv>0?fPct(lPct):'—';
-  document.getElementById('longPnlPct').className='sh-stat-value '+(lPct>=0?'pos':'neg');
+  const lPnlRow=document.getElementById('longPnlRow');
+  lPnlRow.textContent=lInv>0?`${(lPnl>=0?'+':'')+fUSD(Math.abs(lPnl))}  ${fPct(lPct)}`:'—';
+  lPnlRow.className='sh-pnl-row '+(lPnl>=0?'pos':'neg');
 
   // Short section card stats
   document.getElementById('shortCount').textContent=`${shorts.length} holding${shorts.length!==1?'s':''}`;
@@ -753,11 +727,9 @@ function render(){
   shorts.forEach(item=>{const p=priceCache[item.coinId]?.usd||0;const{qty,cost}=dca(item);sInv+=cost;sVal+=p*qty;});
   const sPnl=sInv-sVal,sPct=sInv>0?(sPnl/sInv)*100:0;
   document.getElementById('shortValue').textContent=fUSD(sVal);
-  document.getElementById('shortInvested').textContent=sInv>0?fUSD(sInv):'—';
-  document.getElementById('shortPnlAbs').textContent=sInv>0?(sPnl>=0?'+':'')+fUSD(Math.abs(sPnl)):'—';
-  document.getElementById('shortPnlAbs').className='sh-stat-value '+(sPnl>=0?'pos':'neg');
-  document.getElementById('shortPnlPct').textContent=sInv>0?fPct(sPct):'—';
-  document.getElementById('shortPnlPct').className='sh-stat-value '+(sPct>=0?'pos':'neg');
+  const sPnlRow=document.getElementById('shortPnlRow');
+  sPnlRow.textContent=sInv>0?`${(sPnl>=0?'+':'')+fUSD(Math.abs(sPnl))}  ${fPct(sPct)}`:'—';
+  sPnlRow.className='sh-pnl-row '+(sPnl>=0?'pos':'neg');
 
   // Auto-expand section with more holdings; if equal, expand long
   const lh=document.getElementById('longHeader'),sh=document.getElementById('shortHeader');
