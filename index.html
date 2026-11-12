@@ -117,7 +117,6 @@
     .tools{display:flex;align-items:center;gap:2px}
     .tool{position:relative;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--sub);transition:background .15s,color .15s}
     .tool:hover{background:var(--raised);color:var(--text)}
-    .tool.spinning svg{animation:spin .8s linear infinite}
     .count-dot{position:absolute;top:3px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-size:10px;font-weight:700;display:grid;place-items:center;line-height:1}
     #avatarWrap{margin-left:6px;width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0}
     .avatar,.avatar-fb{width:34px;height:34px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:var(--raised);color:var(--text);font-weight:700;font-size:14px}
@@ -386,9 +385,7 @@
       <div class="brand"><div class="mark" data-ic="logo" data-size="20"></div>CryptoTrack</div>
       <div class="tools">
         <button class="tool" id="hideBtn" aria-label="Hide values" onclick="toggleHideValues()"></button>
-        <button class="tool" id="themeBtn" aria-label="Switch theme" onclick="cycleTheme()"></button>
         <button class="tool" id="alertBtn" aria-label="Price alerts" onclick="openAlerts()"><span data-ic="bell"></span><span class="count-dot" id="alertCount" hidden></span></button>
-        <button class="tool" id="refreshBtn" aria-label="Refresh prices"><span data-ic="refresh"></span></button>
         <button id="avatarWrap" aria-label="Account and settings" onclick="toggleUserMenu()"></button>
       </div>
     </header>
@@ -555,7 +552,6 @@
       <div class="field">
         <label class="label" for="buyInput">Buy price (USD)</label>
         <input class="input" id="buyInput" type="number" inputmode="decimal" step="any" min="0" placeholder="0.00"/>
-        <div class="hint">Optional. Used for profit and loss.</div>
       </div>
     </div>
     <div class="row2">
@@ -657,16 +653,12 @@ function showToast(msg,type='info',duration=3200){
 // Theme
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const mq=window.matchMedia('(prefers-color-scheme: dark)');
-const isDark=()=>document.documentElement.getAttribute('data-theme')==='dark';
 function applyTheme(){
   const dark=themePref==='dark'||(themePref==='system'&&mq.matches);
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0C121B':'#EDF1F5');
-  $('themeBtn').innerHTML=ic(dark?'sun':'moon');
-  $('themeBtn').setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');
   document.querySelectorAll('#themeSeg .seg-btn').forEach(b=>b.classList.toggle('on',b.dataset.pref===themePref));
 }
-window.cycleTheme=()=>{themePref=isDark()?'light':'dark';store.set('ct-theme',themePref);applyTheme();};
 $('themeSeg').addEventListener('click',e=>{
   const b=e.target.closest('.seg-btn');if(!b)return;
   themePref=b.dataset.pref;store.set('ct-theme',themePref);applyTheme();
@@ -882,8 +874,7 @@ async function doRefresh(manual){
   if(refreshing){pendingRefresh=true;return;}
   refreshing=true;
   lastIdsKey=ids.slice().sort().join(',');
-  const btn=$('refreshBtn');
-  btn.classList.add('spinning');
+  $('updateTime').textContent='Updating…';
   try{
     // One call gives price, 24h change and a 7-day sparkline for every coin
     let rows=null;
@@ -914,15 +905,14 @@ async function doRefresh(manual){
   }catch(e){
     console.error(e);
     $('retryBanner').hidden=false;
+    $('updateTime').textContent='Update failed';
     if(manual)showToast('Price update failed: '+e.message,'warning',4000);
   }finally{
-    btn.classList.remove('spinning');
     refreshing=false;
     if(pendingRefresh){pendingRefresh=false;doRefresh();}
   }
 }
 window.doRefresh=doRefresh;
-$('refreshBtn').addEventListener('click',()=>doRefresh(true));
 
 // Auto refresh (interval is a setting; also refreshes when you come back to the app)
 function scheduleRefresh(){
