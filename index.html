@@ -154,15 +154,16 @@
     .hero{padding:10px 20px 4px}
     .hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--sub);font-size:13px;font-weight:500}
     .sync{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
-    .hero-main{display:flex;align-items:flex-end;flex-wrap:wrap;gap:4px 12px;margin:6px 0 0}
-    .hero-value{font:700 clamp(38px,12.5vw,52px)/1.05 var(--display);letter-spacing:-.035em;margin:0}
+    .hero-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;margin:6px 0 0}
+    .hero-value{font:700 48px/1.05 var(--display);letter-spacing:-.035em;margin:0;white-space:nowrap;min-width:0}
     .pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
     .pill.pos{background:var(--gain-bg);color:var(--gain)}
     .pill.neg{background:var(--loss-bg);color:var(--loss)}
     .pill.flat{background:var(--raised);color:var(--muted)}
-    .pill.stack{gap:8px;padding:6px 12px 6px 10px;font-size:13px;line-height:1;margin-bottom:8px}
+    .pill.stack{flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1;margin-bottom:6px}
+    .pill.stack .pl-top{display:flex;align-items:center;gap:5px}
     .pill.stack svg{flex-shrink:0}
-    .pill.stack small{font-size:13px;font-weight:600;opacity:.9;padding-left:8px;border-left:1px solid currentColor;border-left-color:color-mix(in srgb,currentColor 30%,transparent)}
+    .pill.stack small{font-size:12px;font-weight:600;opacity:.9}
     .period{margin-top:12px}
     .period .seg-btn{height:30px;font-size:12px;border-radius:9px}
     .chart{position:relative;height:128px;margin:12px -20px 0;touch-action:pan-y;cursor:crosshair}
@@ -1317,8 +1318,14 @@ $('heroChart').addEventListener('pointermove',scrub);
 $('heroChart').addEventListener('pointerdown',scrub);
 $('heroChart').addEventListener('pointerleave',unscrub);
 $('heroChart').addEventListener('pointercancel',unscrub);
+// Keep the big balance on one line: shrink the font until it fits its column
+function fitHeroValue(){
+  const el=$('totalValue');if(!el||!el.clientWidth)return;
+  let size=48;el.style.fontSize=size+'px';
+  while(el.scrollWidth>el.clientWidth&&size>24){size-=2;el.style.fontSize=size+'px';}
+}
 let resizeTO=null;
-window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{if(chartSrc)renderHeroChart(chartSrc);},150);});
+window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{fitHeroValue();if(chartSrc)renderHeroChart(chartSrc);},150);});
 
 // Period and chart style controls
 function syncChartControls(){
@@ -1458,7 +1465,8 @@ function render(){
   }
   const pill=$('totPnl');
   pill.className='pill stack sensitive '+(pOK?sgnCls(pd):'flat');
-  pill.innerHTML=pOK?`${ic(pd>=0?'long':'short',14)}<b>${fPnl(pd)}</b><small>${fPctS(pp)}</small>`:'<b>—</b>';
+  pill.innerHTML=pOK?`<span class="pl-top">${ic(pd>=0?'long':'short',14)}<b>${fPnl(pd)}</b></span><small>${fPctS(pp)}</small>`:'<b>—</b>';
+  fitHeroValue();
   renderHeroChart(view);
 
   // Spot and Future tiles
