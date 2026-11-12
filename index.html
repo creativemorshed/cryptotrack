@@ -160,8 +160,9 @@
     .pill.pos{background:var(--gain-bg);color:var(--gain)}
     .pill.neg{background:var(--loss-bg);color:var(--loss)}
     .pill.flat{background:var(--raised);color:var(--muted)}
-    .pill.stack{flex-direction:column;align-items:flex-end;gap:0;padding:3px 10px;border-radius:12px;line-height:1.25;margin-bottom:7px}
-    .pill.stack small{font-size:11px;font-weight:600;opacity:.85}
+    .pill.stack{gap:8px;padding:6px 12px 6px 10px;font-size:13px;line-height:1;margin-bottom:8px}
+    .pill.stack svg{flex-shrink:0}
+    .pill.stack small{font-size:13px;font-weight:600;opacity:.9;padding-left:8px;border-left:1px solid currentColor;border-left-color:color-mix(in srgb,currentColor 30%,transparent)}
     .period{margin-top:12px}
     .period .seg-btn{height:30px;font-size:12px;border-radius:9px}
     .chart{position:relative;height:128px;margin:12px -20px 0;touch-action:pan-y;cursor:crosshair}
@@ -1457,7 +1458,7 @@ function render(){
   }
   const pill=$('totPnl');
   pill.className='pill stack sensitive '+(pOK?sgnCls(pd):'flat');
-  pill.innerHTML=pOK?`<b>${fPnl(pd)}</b><small>${fPctS(pp)}</small>`:'<b>—</b><small>&nbsp;</small>';
+  pill.innerHTML=pOK?`${ic(pd>=0?'long':'short',14)}<b>${fPnl(pd)}</b><small>${fPctS(pp)}</small>`:'<b>—</b>';
   renderHeroChart(view);
 
   // Spot and Future tiles
