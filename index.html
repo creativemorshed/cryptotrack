@@ -270,8 +270,11 @@
     .ibtn{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--muted)}
     .ibtn:hover{background:var(--raised);color:var(--text)}
     .ibtn.del:hover{color:var(--loss)}
-    .coin-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-    .coin-actions .btn.danger{margin-left:auto}
+    .coin-actions{display:grid;gap:8px;margin-top:14px}
+    .act-row{display:grid;gap:8px}
+    .act-row.r3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .act-row.r2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .coin-actions .btn{height:40px;padding:0 8px;min-width:0}
 
     /* ───────── Sheets (modals) ───────── */
     .overlay{position:fixed;inset:0;z-index:200;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;animation:fade .2s ease}
@@ -1644,11 +1647,17 @@ function coinHTML(item,idx){
       ${buyRows}
       ${sells.length?`<div class="buys-head"><span>${item.posType==='spot'?'Sell':'Close'} history (${sells.length})</span></div>${sellRows}`:''}
       <div class="coin-actions">
-        <button class="btn ghost sm" onclick="openModal('${esc(key)}')">${ic('plus',16)}Add buy</button>
-        ${closed?'':`<button class="btn ghost sm" onclick="openSell('${esc(key)}')">${ic('minus',16)}${closeLabel}</button>
-        <button class="btn ghost sm" onclick="openAlerts('${esc(item.coinId)}')">${ic('bell',16)}Alert</button>
-        <button class="btn ghost sm" onclick="openRisk('${esc(key)}')">${ic('shield',16)}SL / TP</button>`}
-        <button class="btn danger sm" onclick="delCoin('${esc(key)}')">${ic('trash',16)}Remove</button>
+        ${closed?'':`<div class="act-row r3">
+          <button class="btn ghost sm" onclick="openModal('${esc(key)}')">${ic('plus',16)}Buy</button>
+          <button class="btn ghost sm" onclick="openSell('${esc(key)}')">${ic('minus',16)}${closeLabel}</button>
+          <button class="btn ghost sm" onclick="openAlerts('${esc(item.coinId)}')">${ic('bell',16)}Alert</button>
+        </div>`}
+        <div class="act-row r2">
+          ${closed
+            ?`<button class="btn ghost sm" onclick="openModal('${esc(key)}')">${ic('plus',16)}Buy again</button>`
+            :`<button class="btn ghost sm" onclick="openRisk('${esc(key)}')">${ic('shield',16)}SL / TP</button>`}
+          <button class="btn danger sm" onclick="delCoin('${esc(key)}')">${ic('trash',16)}Remove</button>
+        </div>
       </div>
     </div>
   </article>`;
