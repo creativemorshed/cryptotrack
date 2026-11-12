@@ -154,24 +154,33 @@
     .hero{padding:10px 20px 4px}
     .hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--sub);font-size:13px;font-weight:500}
     .sync{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
-    .hero-value{font:700 clamp(38px,12.5vw,52px)/1.05 var(--display);letter-spacing:-.035em;margin:6px 0 10px}
-    .hero-delta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .hero-main{display:flex;align-items:flex-end;flex-wrap:wrap;gap:4px 12px;margin:6px 0 0}
+    .hero-value{font:700 clamp(38px,12.5vw,52px)/1.05 var(--display);letter-spacing:-.035em;margin:0}
     .pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
     .pill.pos{background:var(--gain-bg);color:var(--gain)}
     .pill.neg{background:var(--loss-bg);color:var(--loss)}
     .pill.flat{background:var(--raised);color:var(--muted)}
-    .hero-note{font-size:12px;color:var(--muted)}
-    .chart{position:relative;height:116px;margin:14px -20px 0;touch-action:pan-y;cursor:crosshair}
+    .pill.stack{flex-direction:column;align-items:flex-end;gap:0;padding:3px 10px;border-radius:12px;line-height:1.25;margin-bottom:7px}
+    .pill.stack small{font-size:11px;font-weight:600;opacity:.85}
+    .period{margin-top:12px}
+    .period .seg-btn{height:30px;font-size:12px;border-radius:9px}
+    .chart{position:relative;height:128px;margin:12px -20px 0;touch-action:pan-y;cursor:crosshair}
     .chart svg{width:100%;height:100%}
     .chart.reveal svg{animation:reveal 1s cubic-bezier(.3,.7,.2,1)}
     @keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
     .hl{fill:none;stroke:var(--ch);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
     .ha{fill:url(#hg)}
-    .chart-empty{height:100%;display:grid;place-items:center;font-size:12px;color:var(--muted)}
+    .chart-empty{height:100%;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;font-size:12px;color:var(--muted)}
+    .chart-empty .btn{height:30px;padding:0 14px;font-size:12px}
+    .cwick{stroke-width:1.4;stroke-linecap:round}
+    .cu{fill:var(--gain);stroke:var(--gain)}.cd{fill:var(--loss);stroke:var(--loss)}
+    .cu.cwick,.cd.cwick{fill:none}
+    .tip.multi{line-height:1.4;font-weight:600;font-variant-numeric:tabular-nums}
+    .tip .tm{display:block;font-weight:500;color:var(--muted)}
     .cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);opacity:.5;pointer-events:none}
     .cross-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--ch);box-shadow:0 0 0 3px var(--bg);pointer-events:none}
     .tip{position:absolute;top:0;padding:4px 9px;border-radius:8px;background:var(--surface);box-shadow:var(--shadow),0 0 0 1px var(--line);font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none}
-    .chart-cap{font-size:11px;color:var(--muted);margin-top:6px}
+    .chart-cap{font-size:11px;color:var(--muted);margin-top:8px}
     .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
     .hs{min-width:0}
     .hs+.hs{padding-left:12px;border-left:1px solid var(--line)}
@@ -395,6 +404,13 @@
           </div>
         </div>
         <div class="setting">
+          <span class="k">Chart style</span>
+          <div class="seg" id="chartSeg">
+            <button class="seg-btn" data-style="line">Line</button>
+            <button class="seg-btn" data-style="candle">Candles</button>
+          </div>
+        </div>
+        <div class="setting">
           <label class="k" for="refreshSel">Refresh prices</label>
           <select class="input" id="refreshSel">
             <option value="0">Off</option>
@@ -423,13 +439,18 @@
         <span>Portfolio value</span>
         <span class="sync"><i class="sync-dot" id="syncDot"></i><span id="updateTime">Not updated yet</span></span>
       </div>
-      <div class="hero-value sensitive" id="totalValue">$0.00</div>
-      <div class="hero-delta">
-        <span class="pill flat sensitive" id="totPnl">—</span>
-        <span class="hero-note">all time</span>
+      <div class="hero-main">
+        <div class="hero-value sensitive" id="totalValue">$0.00</div>
+        <span class="pill stack flat sensitive" id="totPnl" aria-live="polite">—</span>
       </div>
-      <div class="chart" id="heroChart" aria-label="Portfolio value over the last 7 days"></div>
-      <div class="chart-cap">Last 7 days, based on what you hold today</div>
+      <div class="chart" id="heroChart" aria-label="Portfolio value chart"></div>
+      <div class="seg period" id="periodSeg" role="tablist" aria-label="Time period">
+        <button class="seg-btn" data-p="1w" role="tab">Week</button>
+        <button class="seg-btn" data-p="1m" role="tab">Month</button>
+        <button class="seg-btn" data-p="1y" role="tab">Year</button>
+        <button class="seg-btn" data-p="all" role="tab">All time</button>
+      </div>
+      <div class="chart-cap" id="chartCap">Based on what you hold today</div>
       <div class="hero-stats">
         <div class="hs"><div class="k">Invested</div><div class="v sensitive" id="totMargin">—</div></div>
         <div class="hs"><div class="k">Last 24 hours</div><div class="v sensitive" id="totDay">—</div></div>
@@ -722,7 +743,11 @@ let themePref=store.get('ct-theme','system');
 let sortKey=store.get('ct-sort','value'),filterKey=store.get('ct-filter','all');
 if(!['value','pct','pnl','day','name'].includes(sortKey))sortKey='value';
 let refreshTimer=null,refreshing=false,pendingRefresh=false,lastUpdate=0,lastIdsKey='',firstSnap=true;
-let chartVals=null,chartScale=null,chartRevealed=false;
+let chartSrc=null,chartMode='line',chartCandles=null,chartScale=null,chartRevealed=false;
+let period=store.get('ct-period','all'),chartStyle=store.get('ct-chart','line');
+if(!['1w','1m','1y','all'].includes(period))period='all';
+if(!['line','candle'].includes(chartStyle))chartStyle='line';
+const histCache={};let histBusy=false,histFailAt=0,histToken=0;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Icons (stroke icons, inherit text colour)
@@ -1085,64 +1110,205 @@ function sparkHTML(arr,w=48,h=24){
   return`<span class="sp${up?' up':''}"><svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><path d="${d}"/></svg></span>`;
 }
 
-// 7-day portfolio curve: each coin's hourly price × the quantity you hold today
-function buildCurve(base){
-  const items=openItems();
-  if(!items.length)return null;
-  let L=Infinity;
-  for(const it of items){
-    const s=priceCache[it.coinId]?.spark;
-    if(!s||s.length<10)return null;
-    L=Math.min(L,s.length);
+// ── Portfolio history for the chart ──
+// Week uses the 7-day sparkline we already have. Month, Year and All time load each coin's price
+// history from CoinGecko once and keep it for a while.
+const HIST_TTL=d=>d<=31?15*60e3:3*3600e3;
+function periodDays(){
+  if(period==='1w')return 7;
+  if(period==='1m')return 30;
+  if(period==='1y')return 365;
+  // All time: from your first buy, capped at what the free CoinGecko plan serves (365 days)
+  let first=Infinity;
+  for(const it of openItems())for(const b of it.buys||[]){
+    const t=Date.parse(b.date);
+    if(!isNaN(t))first=Math.min(first,t);
   }
-  const totals=new Array(L).fill(base);
-  for(const it of items){
-    const{qty,posSize}=dca(it);
-    const pc=priceCache[it.coinId],s=pc.spark,off=s.length-L;
-    const short=it.posType==='short';
-    for(let i=0;i<L;i++){
-      const price=(i===L-1&&pc.usd>0)?pc.usd:s[off+i];
-      const v=price*qty;
-      totals[i]+=short?posSize-v:v-posSize;
+  if(!isFinite(first))return 7;
+  return Math.min(365,Math.max(7,Math.ceil((Date.now()-first)/864e5)+1));
+}
+function seriesFor(id,days){
+  if(days===7){
+    const sp=priceCache[id]?.spark;
+    if(sp&&sp.length>=10){const now=Date.now();return sp.map((p,i)=>[now-(sp.length-1-i)*3600e3,p]);}
+  }
+  return histCache[id+':'+days]?.pts||null;
+}
+async function ensureHistory(days){
+  if(days<=7||histBusy)return;
+  const need=openIds().filter(id=>{const h=histCache[id+':'+days];return !h||Date.now()-h.at>HIST_TTL(days);});
+  if(!need.length)return;
+  histBusy=true;const token=++histToken;
+  try{
+    // 3 at a time keeps us under the free-plan rate limit
+    for(let i=0;i<need.length;i+=3){
+      await Promise.all(need.slice(i,i+3).map(async id=>{
+        const j=await fetchWithRetry(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`);
+        if(!j||!Array.isArray(j.prices)||j.prices.length<5)throw new Error('No price history');
+        histCache[id+':'+days]={at:Date.now(),pts:j.prices.filter(p=>p&&p[1]>0)};
+      }));
+    }
+    histFailAt=0;
+  }catch(e){
+    console.error(e);histFailAt=Date.now();
+  }finally{
+    histBusy=false;
+    if(token===histToken)render();
+  }
+}
+window.retryHistory=()=>{histFailAt=0;render();};
+
+// Portfolio value over time: each coin's price × the quantity you hold today, on a shared time grid
+function buildSeries(days,base){
+  const data=[];
+  for(const it of openItems()){
+    const sr=seriesFor(it.coinId,days);
+    if(!sr||sr.length<5)return null;
+    data.push({it,sr,d:dca(it)});
+  }
+  if(!data.length)return null;
+  const start=Math.max(...data.map(x=>x.sr[0][0]));
+  const ref=data[0].sr.filter(pt=>pt[0]>=start);
+  if(ref.length<5)return null;
+  const t=ref.map(pt=>pt[0]);
+  t[t.length-1]=Date.now();
+  const v=new Array(t.length).fill(base);
+  for(const x of data){
+    const live=priceCache[x.it.coinId]?.usd,short=x.it.posType==='short';
+    let j=0;
+    for(let i=0;i<t.length;i++){
+      while(j<x.sr.length-1&&x.sr[j+1][0]<=t[i])j++;
+      const price=(i===t.length-1&&live>0)?live:x.sr[j][1];
+      const val=price*x.d.qty;
+      v[i]+=short?x.d.posSize-val:val-x.d.posSize;
     }
   }
-  return totals;
+  return{t,v};
+}
+// What the chart should show right now: data, loading, error or nothing to show
+function chartView(base){
+  if(!openItems().length)return{state:'empty',msg:'No open positions'};
+  const days=periodDays();
+  if(days>7){
+    const missing=openIds().some(id=>!histCache[id+':'+days]);
+    const stale=openIds().some(id=>{const h=histCache[id+':'+days];return h&&Date.now()-h.at>HIST_TTL(days);});
+    if(missing){
+      if(histFailAt&&Date.now()-histFailAt<60e3)return{state:'error'};
+      ensureHistory(days);
+      return{state:'loading'};
+    }
+    if(stale&&!histFailAt)ensureHistory(days);
+  }
+  const sr=buildSeries(days,base);
+  if(!sr)return{state:'empty',msg:'The chart appears once prices load',loading:true};
+  return{state:'ok',days,...sr};
 }
 
-function renderHeroChart(vals,emptyMsg='The chart appears once prices load'){
+// ── Candles ──
+function bucketMs(spanDays){
+  if(spanDays<=8)return 4*3600e3;
+  if(spanDays<=32)return 864e5;
+  if(spanDays<=100)return 2*864e5;
+  if(spanDays<=200)return 4*864e5;
+  return 7*864e5;
+}
+function bucketLabel(ms){
+  if(ms<864e5)return`${ms/3600e3} hours`;
+  if(ms===864e5)return'1 day';
+  return ms>=7*864e5?'1 week':`${ms/864e5} days`;
+}
+function toCandles(t,v,ms){
+  const out=[];let cur=null;
+  for(let i=0;i<v.length;i++){
+    const k=Math.floor(t[i]/ms);
+    if(!cur||cur.k!==k){
+      if(cur)out.push(cur);
+      const o=cur?cur.c:v[i];
+      cur={k,t0:t[i],t1:t[i],o,h:Math.max(o,v[i]),l:Math.min(o,v[i]),c:v[i]};
+    }else{cur.h=Math.max(cur.h,v[i]);cur.l=Math.min(cur.l,v[i]);cur.c=v[i];cur.t1=t[i];}
+  }
+  if(cur)out.push(cur);
+  return out;
+}
+const fCompact=v=>Math.abs(v)>=10000?(v/1000).toFixed(1)+'K':v.toFixed(2);
+function fWhen(ts,days,withHour){
+  const o=days>200?{month:'short',day:'numeric',year:'numeric'}:withHour?{month:'short',day:'numeric',hour:'numeric'}:{month:'short',day:'numeric'};
+  return new Date(ts).toLocaleString('en-US',o);
+}
+
+function renderHeroChart(view){
   const wrap=$('heroChart');
-  if(!vals){
-    chartVals=null;
-    wrap.innerHTML=`<div class="chart-empty">${emptyMsg}</div>`;
+  chartSrc=view&&view.state==='ok'?view:null;
+  const cap=$('chartCap');
+  if(!chartSrc){
+    chartCandles=null;
+    let inner;
+    if(view&&view.state==='error')inner=`<span>Couldn't load price history</span><button class="btn ghost" onclick="retryHistory()">Try again</button>`;
+    else if(view&&view.state==='loading')inner=`<span>Loading history…</span>`;
+    else inner=`<span>${view&&view.msg||'The chart appears once prices load'}</span>`;
+    wrap.innerHTML=`<div class="chart-empty">${inner}</div>`;
+    cap.textContent='Based on what you hold today';
     return;
   }
-  chartVals=vals;
-  const W=Math.max(200,Math.round(wrap.clientWidth||360)),H=116,pad=10;
-  const min=Math.min(...vals),max=Math.max(...vals),rng=max-min||1;
-  chartScale={min,rng,H,pad};
-  const yOf=v=>pad+(1-(v-min)/rng)*(H-pad*2);
-  const line=vals.map((v,i)=>`${i?'L':'M'}${(i/(vals.length-1)*W).toFixed(1)} ${yOf(v).toFixed(1)}`).join('');
-  const up=vals[vals.length-1]>=vals[0];
+  const{t,v,days}=chartSrc;
+  const W=Math.max(200,Math.round(wrap.clientWidth||360)),H=128,pad=10;
+  const span=(t[t.length-1]-t[0])/864e5;
+  const ms=bucketMs(span);
+  chartCandles=chartStyle==='candle'?toCandles(t,v,ms):null;
+  if(chartCandles&&chartCandles.length<3)chartCandles=null;
+  chartMode=chartCandles?'candle':'line';
+  const lo=chartCandles?Math.min(...chartCandles.map(c=>c.l)):Math.min(...v);
+  const hi=chartCandles?Math.max(...chartCandles.map(c=>c.h)):Math.max(...v);
+  const rng=hi-lo||1;
+  chartScale={min:lo,rng,H,pad};
+  const yOf=x=>pad+(1-(x-lo)/rng)*(H-pad*2);
+  const up=v[v.length-1]>=v[0];
   wrap.style.setProperty('--ch',up?'var(--gain)':'var(--loss)');
   if(!chartRevealed){wrap.classList.add('reveal');chartRevealed=true;}else wrap.classList.remove('reveal');
-  wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Portfolio value, last 7 days">
-    <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ch);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--ch);stop-opacity:0"/></linearGradient></defs>
-    <path class="ha" d="${line}L${W} ${H}L0 ${H}Z"/><path class="hl" d="${line}"/></svg>
+  let shape;
+  if(chartCandles){
+    const n=chartCandles.length,slot=W/n,bw=Math.max(2,Math.min(slot*.64,14));
+    shape=chartCandles.map((c,i)=>{
+      const x=(i+.5)*slot,cls=c.c>=c.o?'cu':'cd';
+      const yo=yOf(c.o),yc=yOf(c.c),top=Math.min(yo,yc),bh=Math.max(1.5,Math.abs(yo-yc));
+      return`<line class="cwick ${cls}" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${yOf(c.h).toFixed(1)}" y2="${yOf(c.l).toFixed(1)}"/><rect class="${cls}" x="${(x-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1"/>`;
+    }).join('');
+  }else{
+    const line=v.map((x,i)=>`${i?'L':'M'}${(i/(v.length-1)*W).toFixed(1)} ${yOf(x).toFixed(1)}`).join('');
+    shape=`<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ch);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--ch);stop-opacity:0"/></linearGradient></defs>
+    <path class="ha" d="${line}L${W} ${H}L0 ${H}Z"/><path class="hl" d="${line}"/>`;
+  }
+  wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Portfolio value chart">${shape}</svg>
     <div class="cross" hidden></div><i class="cross-dot" hidden></i><div class="tip sensitive" hidden></div>`;
+  const rangeText=period==='1w'?'Last 7 days':period==='1m'?'Last 30 days':period==='1y'?'Last year':(days>=365?'Last year':days<=7?'Last 7 days':'Since your first buy');
+  cap.textContent=`${rangeText} · ${chartCandles?`1 candle = ${bucketLabel(ms)} · `:''}at today's holdings`;
 }
 function scrub(e){
-  if(!chartVals||!chartScale)return;
+  if(!chartSrc)return;
   const wrap=$('heroChart'),r=wrap.getBoundingClientRect();
   const cross=wrap.querySelector('.cross'),dot=wrap.querySelector('.cross-dot'),tip=wrap.querySelector('.tip');
   if(!cross)return;
-  const n=chartVals.length;
   const x=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
-  const i=Math.round(x*(n-1)),px=i/(n-1)*r.width;
-  const{min,rng,H,pad}=chartScale;
+  const{t,v,days}=chartSrc;
+  let px;
+  if(chartMode==='candle'){
+    const n=chartCandles.length,i=Math.min(n-1,Math.floor(x*n)),c=chartCandles[i];
+    px=(i+.5)/n*r.width;
+    dot.hidden=true;
+    const ms=bucketMs((t[t.length-1]-t[0])/864e5);
+    const when=ms<864e5?fWhen(c.t0,days,true):ms===864e5?fWhen(c.t0,days,false):`${fWhen(c.t0,days,false)} – ${fWhen(c.t1,days,false)}`;
+    tip.className='tip multi sensitive';
+    tip.innerHTML=`<span class="tm">${when}</span>O ${fCompact(c.o)}  H ${fCompact(c.h)}<br>L ${fCompact(c.l)}  C ${fCompact(c.c)}`;
+  }else{
+    const n=v.length,i=Math.round(x*(n-1));
+    px=i/(n-1)*r.width;
+    const{min,rng,H,pad}=chartScale;
+    dot.style.left=px+'px';dot.style.top=(pad+(1-(v[i]-min)/rng)*(H-pad*2))+'px';dot.hidden=false;
+    tip.className='tip sensitive';
+    tip.textContent=`${fUSD(v[i])} · ${fWhen(t[i],days,days<=31)}`;
+  }
   cross.style.left=px+'px';cross.hidden=false;
-  dot.style.left=px+'px';dot.style.top=(pad+(1-(chartVals[i]-min)/rng)*(H-pad*2))+'px';dot.hidden=false;
-  const when=new Date(Date.now()-(n-1-i)*3600e3).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric'});
-  tip.textContent=`${fUSD(chartVals[i])} · ${when}`;tip.hidden=false;
+  tip.hidden=false;
   tip.style.left=Math.min(Math.max(px-tip.offsetWidth/2,8),r.width-tip.offsetWidth-8)+'px';
 }
 function unscrub(){$('heroChart').querySelectorAll('.cross,.cross-dot,.tip').forEach(el=>el.hidden=true);}
@@ -1151,7 +1317,27 @@ $('heroChart').addEventListener('pointerdown',scrub);
 $('heroChart').addEventListener('pointerleave',unscrub);
 $('heroChart').addEventListener('pointercancel',unscrub);
 let resizeTO=null;
-window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{if(chartVals)renderHeroChart(chartVals);},150);});
+window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{if(chartSrc)renderHeroChart(chartSrc);},150);});
+
+// Period and chart style controls
+function syncChartControls(){
+  document.querySelectorAll('#periodSeg .seg-btn').forEach(b=>{const on=b.dataset.p===period;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+  document.querySelectorAll('#chartSeg .seg-btn').forEach(b=>b.classList.toggle('on',b.dataset.style===chartStyle));
+}
+$('periodSeg').addEventListener('click',e=>{
+  const b=e.target.closest('.seg-btn');if(!b||b.dataset.p===period)return;
+  period=b.dataset.p;store.set('ct-period',period);
+  histFailAt=0;chartRevealed=false;
+  syncChartControls();render();
+});
+$('chartSeg').addEventListener('click',e=>{
+  const b=e.target.closest('.seg-btn');if(!b||b.dataset.style===chartStyle)return;
+  chartStyle=b.dataset.style;store.set('ct-chart',chartStyle);
+  chartRevealed=false;
+  syncChartControls();
+  if(chartSrc)renderHeroChart(chartSrc);
+});
+syncChartControls();
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Render
@@ -1246,9 +1432,6 @@ function render(){
 
   // Hero
   $('totalValue').textContent=fUSD(balance);
-  const pill=$('totPnl');
-  pill.className='pill sensitive '+sgnCls(totalPnL);
-  pill.textContent=`${fPnl(totalPnL)} (${fPctS(pct)})`;
   $('totMargin').textContent=fUSD(marginSum);
   let day=0,dayOK=false;
   opens.forEach(it=>{
@@ -1265,7 +1448,17 @@ function render(){
   const realEl=$('totRealized');
   realEl.textContent=anySells?fPnl(realizedTotal):'—';
   realEl.className='v sensitive '+(anySells?sgnCls(realizedTotal):'');
-  renderHeroChart(buildCurve(base),opens.length?undefined:'No open positions');
+  const view=chartView(base);
+  // The red/green figure beside the balance follows the selected period
+  let pd=totalPnL,pp=pct,pOK=true;
+  if(period!=='all'){
+    if(view.state==='ok'){pd=view.v[view.v.length-1]-view.v[0];pp=view.v[0]>0?pd/view.v[0]*100:null;}
+    else pOK=false;
+  }
+  const pill=$('totPnl');
+  pill.className='pill stack sensitive '+(pOK?sgnCls(pd):'flat');
+  pill.innerHTML=pOK?`<b>${fPnl(pd)}</b><small>${fPctS(pp)}</small>`:'<b>—</b><small>&nbsp;</small>';
+  renderHeroChart(view);
 
   // Spot and Future tiles
   $('balanceCards').hidden=false;
