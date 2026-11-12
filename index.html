@@ -139,7 +139,6 @@
     .p-name{font-weight:700;font-size:15px}
     .p-email{font-size:12px;color:var(--muted);word-break:break-all}
     .p-sync{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);padding:10px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);margin-bottom:12px}
-    .cap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:var(--r-md);background:var(--raised);margin-bottom:8px}
     .k{font-size:12px;color:var(--muted);font-weight:500}
     .v{font-weight:700;font-size:15px}
     .setting{margin-top:14px}
@@ -163,7 +162,6 @@
     .pill.neg{background:var(--loss-bg);color:var(--loss)}
     .pill.flat{background:var(--raised);color:var(--muted)}
     .hero-note{font-size:12px;color:var(--muted)}
-    .link{color:var(--accent-text);font-weight:600;font-size:13px;padding:6px 0}
     .chart{position:relative;height:116px;margin:14px -20px 0;touch-action:pan-y;cursor:crosshair}
     .chart svg{width:100%;height:100%}
     .chart.reveal svg{animation:reveal 1s cubic-bezier(.3,.7,.2,1)}
@@ -175,7 +173,7 @@
     .cross-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--ch);box-shadow:0 0 0 3px var(--bg);pointer-events:none}
     .tip{position:absolute;top:0;padding:4px 9px;border-radius:8px;background:var(--surface);box-shadow:var(--shadow),0 0 0 1px var(--line);font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none}
     .chart-cap{font-size:11px;color:var(--muted);margin-top:6px}
-    .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+    .hero-stats{display:grid;grid-template-columns:repeat(2,1fr);margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
     .hs+.hs{padding-left:14px;border-left:1px solid var(--line)}
     .hs .v{font-size:15px;margin-top:2px}
 
@@ -188,11 +186,7 @@
     .tile.future .tile-k i{background:var(--accent)}
     .tile-v{font:700 20px/1.2 var(--display);letter-spacing:-.02em;margin:6px 0 2px}
     .tile-p{font-size:12px;font-weight:600}
-    .meter{height:4px;border-radius:4px;background:var(--raised);margin:12px 0 6px;overflow:hidden}
-    .meter i{display:block;height:100%;border-radius:4px;transition:width .5s ease}
-    .tile.spot .meter i{background:var(--spot)}
-    .tile.future .meter i{background:var(--accent)}
-    .tile-s{font-size:11px;color:var(--muted)}
+    .tile-s{font-size:11px;color:var(--muted);margin-top:10px}
 
     /* ───────── Allocation ───────── */
     .alloc{margin:20px 20px 0}
@@ -366,14 +360,6 @@
           <div><div class="p-name" id="umName"></div><div class="p-email" id="umEmail"></div></div>
         </div>
         <div class="p-sync"><i class="sync-dot" id="menuSyncDot"></i><span id="menuSyncText">Synced to cloud</span></div>
-        <div class="cap">
-          <div><div class="k">Spot capital</div><div class="v sensitive" id="umSpotCapital">Not set</div></div>
-          <button class="btn ghost sm" onclick="closeUserMenu();openCapitalModal('spot')">Set</button>
-        </div>
-        <div class="cap">
-          <div><div class="k">Future capital</div><div class="v sensitive" id="umFutureCapital">Not set</div></div>
-          <button class="btn ghost sm" onclick="closeUserMenu();openCapitalModal('future')">Set</button>
-        </div>
         <div class="setting">
           <span class="k">Theme</span>
           <div class="seg" id="themeSeg">
@@ -410,20 +396,18 @@
     <!-- Hero: balance, 7-day chart, key numbers -->
     <section class="hero" id="summaryCard" hidden>
       <div class="hero-top">
-        <span id="heroLabel">Portfolio balance</span>
+        <span>Portfolio value</span>
         <span class="sync"><i class="sync-dot" id="syncDot"></i><span id="updateTime">Not updated yet</span></span>
       </div>
       <div class="hero-value sensitive" id="totalValue">$0.00</div>
       <div class="hero-delta">
         <span class="pill flat sensitive" id="totPnl">—</span>
         <span class="hero-note">all time</span>
-        <button class="link" id="setCapitalLink" onclick="openCapitalModal('spot')" hidden>Set your capital</button>
       </div>
       <div class="chart" id="heroChart" aria-label="Portfolio value over the last 7 days"></div>
       <div class="chart-cap">Last 7 days, based on what you hold today</div>
       <div class="hero-stats">
-        <div class="hs"><div class="k">Capital</div><div class="v sensitive" id="totInv">—</div></div>
-        <div class="hs"><div class="k">In positions</div><div class="v sensitive" id="totMargin">—</div></div>
+        <div class="hs"><div class="k">Invested</div><div class="v sensitive" id="totMargin">—</div></div>
         <div class="hs"><div class="k">Last 24 hours</div><div class="v sensitive" id="totDay">—</div></div>
       </div>
     </section>
@@ -434,15 +418,13 @@
         <div class="tile-k"><i></i>Spot</div>
         <div class="tile-v sensitive" id="spotBalVal">—</div>
         <div class="tile-p sensitive" id="spotPnlDisp">—</div>
-        <div class="meter"><i id="spotMeter" style="width:0%"></i></div>
-        <div class="tile-s sensitive" id="spotCapDisp">—</div>
+        <div class="tile-s sensitive" id="spotSub">—</div>
       </div>
       <div class="tile future">
         <div class="tile-k"><i></i>Future</div>
         <div class="tile-v sensitive" id="futureBalVal">—</div>
         <div class="tile-p sensitive" id="futurePnlDisp">—</div>
-        <div class="meter"><i id="futureMeter" style="width:0%"></i></div>
-        <div class="tile-s sensitive" id="futureCapDisp">—</div>
+        <div class="tile-s sensitive" id="futureSub">—</div>
       </div>
     </div>
 
@@ -493,23 +475,6 @@
     <div class="btns">
       <button class="btn ghost" onclick="closeEditBuy()">Cancel</button>
       <button class="btn primary" onclick="saveEditBuy()">Save changes</button>
-    </div>
-  </div>
-</div>
-
-<!-- Capital -->
-<div class="overlay" id="capitalModal" hidden onclick="if(event.target===this)closeCapitalModal()">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="capitalModalTitle">
-    <div class="grab"></div>
-    <h2 class="sheet-title" id="capitalModalTitle">Spot capital</h2>
-    <div class="field">
-      <label class="label" for="capitalInput">Amount (USD)</label>
-      <input class="input" id="capitalInput" type="number" inputmode="decimal" step="any" min="0" placeholder="e.g. 500"/>
-      <div class="hint" id="capitalModalHint">The money you set aside for spot buys</div>
-    </div>
-    <div class="btns">
-      <button class="btn ghost" onclick="closeCapitalModal()">Cancel</button>
-      <button class="btn primary" onclick="saveCapital()">Save capital</button>
     </div>
   </div>
 </div>
@@ -645,7 +610,6 @@ const store={
 // ── State
 let portfolio=[],alerts=[],priceCache={};
 let selCoin=null,searchTO=null,openCard=null,currentUser=null,unsub=null,posType='spot';
-let spotCapital=0,futureCapital=0,capitalType='spot';
 let valuesHidden=false,allocOpen=false,alDir='above';
 let groupOpen={spot:false,long:false,short:false};
 try{Object.assign(groupOpen,JSON.parse(store.get('ct-groups','{}')))}catch{}
@@ -796,7 +760,8 @@ async function saveCloud(){
   if(!currentUser)return false;
   setSyncStatus('syncing');
   try{
-    await setDoc(doc(db,'portfolios',currentUser.uid),{portfolio,spotCapital,futureCapital,alerts,updatedAt:Date.now()});
+    // merge keeps any older fields (such as saved capital) untouched in Firestore
+    await setDoc(doc(db,'portfolios',currentUser.uid),{portfolio,alerts,updatedAt:Date.now()},{merge:true});
     setSyncStatus('ok');
     return true;
   }catch(e){
@@ -813,8 +778,6 @@ function listenCloud(userId){
   unsub=onSnapshot(doc(db,'portfolios',userId),snap=>{
     const d=snap.exists()?snap.data():{};
     portfolio=d.portfolio||[];
-    spotCapital=d.spotCapital||0;
-    futureCapital=d.futureCapital||0;
     alerts=d.alerts||[];
     render();renderAlertBadge();
     const key=[...new Set(portfolio.map(p=>p.coinId))].sort().join(',');
@@ -844,7 +807,7 @@ onAuthStateChanged(auth,user=>{
   }else{
     currentUser=null;
     if(unsub){unsub();unsub=null;}
-    portfolio=[];alerts=[];spotCapital=0;futureCapital=0;
+    portfolio=[];alerts=[];
     $('mainApp').hidden=true;
     $('loginScreen').hidden=false;
   }
@@ -1079,13 +1042,7 @@ function aggregate(items,isShort){
   return{margin,pnl,posSize};
 }
 
-function renderMenuCapital(){
-  $('umSpotCapital').textContent=spotCapital>0?fUSD(spotCapital):'Not set';
-  $('umFutureCapital').textContent=futureCapital>0?fUSD(futureCapital):'Not set';
-}
-
 function render(){
-  renderMenuCapital();
   const has=portfolio.length>0;
   $('summaryCard').hidden=!has;
   $('holdingsCount').textContent=has?String(portfolio.length):'';
@@ -1100,21 +1057,17 @@ function render(){
   const longs=portfolio.filter(p=>!p.posType||p.posType==='long');
   const shorts=portfolio.filter(p=>p.posType==='short');
   const S=aggregate(spots,false),L=aggregate(longs,false),Sh=aggregate(shorts,true);
-  const sCap=spotCapital>0?spotCapital:0,fCap=futureCapital>0?futureCapital:0,totalCap=sCap+fCap;
   const spotPnl=S.pnl,futPnl=L.pnl+Sh.pnl,totalPnL=spotPnl+futPnl;
   const marginSum=S.margin+L.margin+Sh.margin;
-  const base=totalCap>0?totalCap:marginSum;
+  const base=marginSum;
   const balance=base+totalPnL;
   const pct=base>0?totalPnL/base*100:null;
 
   // Hero
-  $('heroLabel').textContent=totalCap>0?'Portfolio balance':'Portfolio value';
   $('totalValue').textContent=fUSD(balance);
   const pill=$('totPnl');
   pill.className='pill sensitive '+sgnCls(totalPnL);
   pill.textContent=`${fPnl(totalPnL)} (${fPctS(pct)})`;
-  $('setCapitalLink').hidden=totalCap>0;
-  $('totInv').textContent=totalCap>0?fUSD(totalCap):'Not set';
   $('totMargin').textContent=fUSD(marginSum);
   let day=0,dayOK=false;
   portfolio.forEach(it=>{
@@ -1129,18 +1082,17 @@ function render(){
   renderHeroChart(buildCurve(base));
 
   // Spot and Future tiles
-  $('balanceCards').hidden=!(totalCap>0);
-  const tile=(prefix,cap,pnl,used)=>{
-    const v=$(prefix+'BalVal'),p=$(prefix+'PnlDisp');
-    v.textContent=cap>0?fUSD(cap+pnl):'—';
-    p.textContent=cap>0?`${fPnl(pnl)} profit/loss`:'Capital not set';
-    p.className='tile-p sensitive '+(cap>0?sgnCls(pnl):'');
-    const share=cap>0?Math.min(1,used/cap):0;
-    $(prefix+'Meter').style.width=(share*100).toFixed(0)+'%';
-    $(prefix+'CapDisp').textContent=cap>0?`${Math.round(share*100)}% of ${fUSD(cap)} in use`:'Set it from the account menu';
+  $('balanceCards').hidden=false;
+  const tile=(prefix,A,count)=>{
+    const v=$(prefix+'BalVal'),p=$(prefix+'PnlDisp'),sub=$(prefix+'Sub');
+    if(!count){v.textContent='—';p.textContent='';p.className='tile-p';sub.textContent='No positions';return;}
+    v.textContent=fUSD(A.margin+A.pnl);
+    p.textContent=`${fPnl(A.pnl)} (${fPctS(A.margin>0?A.pnl/A.margin*100:null)})`;
+    p.className='tile-p sensitive '+sgnCls(A.pnl);
+    sub.textContent='Invested '+fUSD(A.margin);
   };
-  tile('spot',sCap,spotPnl,S.posSize);
-  tile('future',fCap,futPnl,L.margin+Sh.margin);
+  tile('spot',S,spots.length);
+  tile('future',{margin:L.margin+Sh.margin,pnl:futPnl},longs.length+shorts.length);
 
   // Allocation ribbon
   const allocBase=portfolio.reduce((s,it)=>s+(priceCache[it.coinId]?.usd||0)*dca(it).qty,0);
@@ -1422,27 +1374,6 @@ window.delCoin=cardKey=>{
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Capital
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-window.openCapitalModal=(type='spot')=>{
-  capitalType=type;
-  const isSpot=type==='spot';
-  $('capitalModalTitle').textContent=isSpot?'Spot capital':'Future capital';
-  $('capitalModalHint').textContent=isSpot?'The money you set aside for spot buys':'The money you set aside for long and short positions';
-  $('capitalInput').value=isSpot?(spotCapital||''):(futureCapital||'');
-  $('capitalModal').hidden=false;
-  setTimeout(()=>$('capitalInput').focus(),250);
-};
-window.closeCapitalModal=()=>{$('capitalModal').hidden=true;};
-window.saveCapital=async()=>{
-  const val=parseFloat($('capitalInput').value);
-  if(isNaN(val)||val<0){showToast('Enter an amount of 0 or more','error');return;}
-  if(capitalType==='spot')spotCapital=val;else futureCapital=val;
-  closeCapitalModal();render();
-  if(await saveCloud())showToast(`${capitalType==='spot'?'Spot':'Future'} capital saved`,'success');
-};
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Add buy
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 window.setPos=t=>{
@@ -1493,7 +1424,7 @@ $('openAddBtn').addEventListener('click',()=>openModal(null));
 $('cancelBtn').addEventListener('click',()=>closeModal());
 
 // Escape closes whichever sheet is open
-const sheetClosers={alertModal:()=>closeAlerts(),capitalModal:()=>closeCapitalModal(),editBuyModal:()=>closeEditBuy(),modal:()=>closeModal(),userMenu:()=>closeUserMenu()};
+const sheetClosers={alertModal:()=>closeAlerts(),editBuyModal:()=>closeEditBuy(),modal:()=>closeModal(),userMenu:()=>closeUserMenu()};
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   for(const id of Object.keys(sheetClosers)){if(!$(id).hidden){sheetClosers[id]();break;}}
@@ -1571,10 +1502,6 @@ $('amtInput').addEventListener('input',()=>{validateForm();updatePreview();});
 $('buyInput').addEventListener('input',()=>{validateForm();updatePreview();});
 $('leverageInput').addEventListener('input',updatePreview);
 
-function spotAvailable(){
-  const invested=portfolio.filter(p=>p.posType==='spot').reduce((s,it)=>s+dca(it).posSize,0);
-  return spotCapital-invested;
-}
 function validateForm(){
   const amt=parseFloat($('amtInput').value);
   const buy=parseFloat($('buyInput').value)||0;
@@ -1586,15 +1513,6 @@ function validateForm(){
   }
   amtEl.classList.remove('invalid');
   hint.className='hint';
-  if(posType==='spot'&&spotCapital>0&&buy>0&&amt>0){
-    const newCost=amt*buy,available=spotAvailable();
-    if(newCost>available+0.01){
-      amtEl.classList.add('invalid');
-      hint.textContent=`Over your spot capital. Available: ${fUSD(Math.max(0,available))}`;hint.className='hint err';
-      $('saveBtn').disabled=true;return;
-    }
-    hint.textContent=`${fUSD(Math.max(0,available-newCost))} left after this buy`;
-  }
   $('saveBtn').disabled=!(selCoin&&amt>0&&!isNaN(amt));
   if(selCoin&&amt>0&&buy<=0){
     const p=selCoin.price||priceCache[selCoin.id]?.usd||0;
@@ -1634,13 +1552,6 @@ $('saveBtn').addEventListener('click',()=>{
   const note=$('noteInput').value.trim();
   const leverage=parseFloat($('leverageInput').value)||1;
   if(!selCoin||!amt||isNaN(amt)||amt<=0)return;
-  if(posType==='spot'&&buy>0&&spotCapital>0){
-    const available=spotAvailable();
-    if(amt*buy>available+0.01){
-      showToast(`Over your spot capital. Available: ${fUSD(Math.max(0,available))} of ${fUSD(spotCapital)}`,'error',5000);
-      return;
-    }
-  }
   const newBuy={id:uid(),qty:amt,price:buy,date,note,leverage:posType==='spot'?1:Math.max(1,leverage)};
   const ex=portfolio.find(p=>p.coinId===selCoin.id&&p.posType===posType);
   if(ex){ex.buys.push(newBuy);if(selCoin.image&&!ex.image)ex.image=selCoin.image;}
