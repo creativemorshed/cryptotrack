@@ -172,8 +172,9 @@
     .cross-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--ch);box-shadow:0 0 0 3px var(--bg);pointer-events:none}
     .tip{position:absolute;top:0;padding:4px 9px;border-radius:8px;background:var(--surface);box-shadow:var(--shadow),0 0 0 1px var(--line);font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none}
     .chart-cap{font-size:11px;color:var(--muted);margin-top:6px}
-    .hero-stats{display:grid;grid-template-columns:repeat(2,1fr);margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
-    .hs+.hs{padding-left:14px;border-left:1px solid var(--line)}
+    .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+    .hs{min-width:0}
+    .hs+.hs{padding-left:12px;border-left:1px solid var(--line)}
     .hs .v{font-size:15px;margin-top:2px}
 
     /* ───────── Spot and futures tiles ───────── */
@@ -258,7 +259,7 @@
     .ibtn{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--muted)}
     .ibtn:hover{background:var(--raised);color:var(--text)}
     .ibtn.del:hover{color:var(--loss)}
-    .coin-actions{display:flex;gap:8px;margin-top:14px}
+    .coin-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
     .coin-actions .btn.danger{margin-left:auto}
 
     /* ───────── Sheets (modals) ───────── */
@@ -323,6 +324,32 @@
     .al-empty{font-size:13px;color:var(--muted);padding:4px 0 14px}
     .al-form{margin-top:16px}
     .notif-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--raised);border-radius:var(--r-md);padding:10px 12px;margin:4px 0 16px;font-size:13px;color:var(--sub)}
+
+    /* ───────── Sort, filter, risk, sell ───────── */
+    .toolbar{display:flex;align-items:center;gap:10px;padding:0 0 12px 16px}
+    .sortsel{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--muted);flex-shrink:0}
+    .input.mini{height:34px;width:auto;border-radius:10px;font-size:13px;font-weight:600;padding:0 26px 0 10px;background-position:calc(100% - 14px) 14px,calc(100% - 9px) 14px}
+    .chips{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;padding:2px 20px 2px 2px;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 22px),transparent)}
+    .chips::-webkit-scrollbar{display:none}
+    .fchip{flex-shrink:0;height:34px;padding:0 13px;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1px var(--line);font-size:13px;font-weight:600;color:var(--sub);white-space:nowrap}
+    .fchip .n{margin-left:5px;font-weight:500;opacity:.6}
+    .fchip.on{background:var(--text);color:var(--bg);box-shadow:none}
+    .fchip:disabled{opacity:.4;cursor:default}
+    .group.closed .g-mark{background:var(--raised);color:var(--muted)}
+    .g-val b.pos{color:var(--gain)}.g-val b.neg{color:var(--loss)}
+    .coin-val.pos{color:var(--gain)}.coin-val.neg{color:var(--loss)}
+    .stats .v.pos,.realized-line b.pos,.risk-row b.pos{color:var(--gain)}
+    .stats .v.neg,.realized-line b.neg,.risk-row b.neg{color:var(--loss)}
+    .realized-line{display:flex;justify-content:space-between;align-items:center;padding:12px 2px 0;font-size:13px;color:var(--sub)}
+    .risk{margin-top:12px;border-radius:var(--r-md);box-shadow:inset 0 0 0 1px var(--line-soft);padding:2px 14px}
+    .risk-row{display:flex;align-items:center;gap:8px;padding:10px 0;font-size:13px}
+    .risk-row+.risk-row{border-top:1px solid var(--line-soft)}
+    .risk-row>span{flex:1;color:var(--sub)}
+    .risk-row small{font-size:12px;color:var(--muted);text-align:right}
+    .quick{display:flex;gap:6px;margin-top:8px}
+    .quick button{flex:1;height:34px;border-radius:var(--r-sm);background:var(--raised);font-size:12px;font-weight:600;color:var(--sub);text-align:center}
+    .quick button:active{background:var(--line)}
+    .note-box{font-size:12px;color:var(--muted);margin:-4px 0 14px}
   </style>
 </head>
 <body>
@@ -406,6 +433,7 @@
       <div class="hero-stats">
         <div class="hs"><div class="k">Invested</div><div class="v sensitive" id="totMargin">—</div></div>
         <div class="hs"><div class="k">Last 24 hours</div><div class="v sensitive" id="totDay">—</div></div>
+        <div class="hs"><div class="k">Realized</div><div class="v sensitive" id="totRealized">—</div></div>
       </div>
     </section>
 
@@ -435,6 +463,19 @@
     <div class="sect-head">
       <div class="sect-title">Positions <span class="n" id="holdingsCount"></span></div>
       <button class="btn primary sm" id="openAddBtn"><span data-ic="plus" data-size="16"></span>Add buy</button>
+    </div>
+
+    <div class="toolbar" id="toolbar" hidden>
+      <label class="sortsel"><span>Sort</span>
+        <select class="input mini" id="sortSel" aria-label="Sort positions">
+          <option value="value">Value</option>
+          <option value="pct">Profit %</option>
+          <option value="pnl">Profit $</option>
+          <option value="day">24h change</option>
+          <option value="name">Name</option>
+        </select>
+      </label>
+      <div class="chips" id="filterChips" aria-label="Filter positions"></div>
     </div>
 
     <div class="banner" id="retryBanner" hidden>
@@ -472,6 +513,73 @@
     <div class="btns">
       <button class="btn ghost" onclick="closeEditBuy()">Cancel</button>
       <button class="btn primary" onclick="saveEditBuy()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sell / close -->
+<div class="overlay" id="sellModal" hidden onclick="if(event.target===this)closeSell()">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sellTitle">
+    <div class="grab"></div>
+    <h2 class="sheet-title" id="sellTitle">Sell</h2>
+    <div class="sel">
+      <img id="sellImg" src="" alt="" onerror="this.style.display='none'"/>
+      <div class="sel-info"><div class="sel-name" id="sellName"></div><div class="sel-price" id="sellMeta"></div></div>
+    </div>
+    <div class="field">
+      <label class="label" for="sellQty">Quantity</label>
+      <input class="input" id="sellQty" type="number" inputmode="decimal" step="any" min="0" placeholder="0.00"/>
+      <div class="quick" id="sellQuick">
+        <button data-pct="25">25%</button><button data-pct="50">50%</button><button data-pct="75">75%</button><button data-pct="100">All</button>
+      </div>
+      <div class="hint" id="sellHint"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="label" for="sellPrice" id="sellPriceLabel">Sell price (USD)</label><input class="input" id="sellPrice" type="number" inputmode="decimal" step="any" min="0" placeholder="0.00"/></div>
+      <div class="field"><label class="label" for="sellDate">Date</label><input class="input" id="sellDate" type="date"/></div>
+    </div>
+    <div class="field"><label class="label" for="sellNote">Note</label><input class="input" id="sellNote" type="text" placeholder="e.g. took profit" maxlength="40"/></div>
+    <div class="preview" id="sellPreview" hidden>
+      <div><div class="k">Realized profit / loss</div><div class="pv-v" id="sv-real">—</div></div>
+      <div><div class="k">Exit value</div><div class="pv-v" id="sv-exit">—</div></div>
+      <div><div class="k">Avg entry</div><div class="pv-v" id="sv-avg">—</div></div>
+      <div><div class="k">Left after</div><div class="pv-v" id="sv-left">—</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn ghost" onclick="closeSell()">Cancel</button>
+      <button class="btn primary" id="sellSaveBtn" onclick="saveSell()" disabled>Record sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stop-loss and take-profit -->
+<div class="overlay" id="riskModal" hidden onclick="if(event.target===this)closeRisk()">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="riskTitle">
+    <div class="grab"></div>
+    <h2 class="sheet-title" id="riskTitle">Stop-loss and take-profit</h2>
+    <div class="sel">
+      <img id="riskImg" src="" alt="" onerror="this.style.display='none'"/>
+      <div class="sel-info"><div class="sel-name" id="riskName"></div><div class="sel-price" id="riskMeta"></div></div>
+    </div>
+    <div class="field">
+      <label class="label" for="riskSL">Stop-loss price (USD)</label>
+      <input class="input" id="riskSL" type="number" inputmode="decimal" step="any" min="0" placeholder="0.00"/>
+      <div class="hint" id="riskSLHint"></div>
+    </div>
+    <div class="field">
+      <label class="label" for="riskTP">Take-profit price (USD)</label>
+      <input class="input" id="riskTP" type="number" inputmode="decimal" step="any" min="0" placeholder="0.00"/>
+      <div class="hint" id="riskTPHint"></div>
+    </div>
+    <div class="preview" id="riskPreview" hidden>
+      <div><div class="k">Risk / reward</div><div class="pv-v" id="rv-rr">—</div></div>
+      <div><div class="k">Est. liquidation</div><div class="pv-v" id="rv-liq">—</div></div>
+    </div>
+    <p class="note-box" id="riskNote" hidden>Liquidation is an estimate for isolated margin with a 0.5% maintenance rate. Check your exchange for the exact price.</p>
+    <p class="note-box">You'll get an alert when the price reaches either level, as long as the app is open.</p>
+    <div class="btns">
+      <button class="btn ghost" onclick="closeRisk()">Cancel</button>
+      <button class="btn primary" id="riskSaveBtn" onclick="saveRisk()">Save levels</button>
     </div>
   </div>
 </div>
@@ -607,10 +715,12 @@ const store={
 let portfolio=[],alerts=[],priceCache={};
 let selCoin=null,searchTO=null,openCard=null,currentUser=null,unsub=null,posType='spot';
 let valuesHidden=false,allocOpen=false,alDir='above';
-let groupOpen={spot:false,long:false,short:false};
+let groupOpen={spot:false,long:false,short:false,closed:false};
 try{Object.assign(groupOpen,JSON.parse(store.get('ct-groups','{}')))}catch{}
 let refreshSecs=parseInt(store.get('ct-refresh','120'),10);if(isNaN(refreshSecs))refreshSecs=120;
 let themePref=store.get('ct-theme','system');
+let sortKey=store.get('ct-sort','value'),filterKey=store.get('ct-filter','all');
+if(!['value','pct','pnl','day','name'].includes(sortKey))sortKey='value';
 let refreshTimer=null,refreshing=false,pendingRefresh=false,lastUpdate=0,lastIdsKey='',firstSnap=true;
 let chartVals=null,chartScale=null,chartRevealed=false;
 
@@ -633,7 +743,10 @@ const ICONS={
   search:'<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>',
   spot:'<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20M16 14.5h2"/>',
   long:'<path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/>',
-  short:'<path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/>'
+  short:'<path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/>',
+  closed:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>',
+  minus:'<path d="M5 12h14"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
 };
 const ic=(n,s=20)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
 function hydrateIcons(){document.querySelectorAll('[data-ic]').forEach(el=>{el.innerHTML=ic(el.dataset.ic,+el.dataset.size||20)})}
@@ -719,20 +832,42 @@ const sgnCls=v=>v>0?'pos':v<0?'neg':'flat';
 const PAL=['#6AA6FF','#F7931A','#34D399','#E879F9','#FACC15','#22D3EE','#FB7185','#A3E635','#C084FC','#2DD4BF'];
 const col=i=>PAL[i%PAL.length];
 
-// Position maths: total qty, notional (posSize), margin (posSize ÷ leverage), avg price
+// Position maths. Buys and sells are replayed in date order (average-cost method) to get
+// what is still open: qty, notional (posSize), margin (posSize ÷ leverage) and avg entry,
+// plus realized profit from sells. Leverage changes the margin, not the dollar profit.
+const EPS=1e-9;
 function dca(item){
-  let qty=0,posSize=0,margin=0;
-  for(const b of item.buys){
-    const lev=b.leverage||1;
-    const bPos=b.qty*(b.price||0);
-    qty+=b.qty;posSize+=bPos;margin+=bPos/lev;
+  const ev=[];
+  (item.buys||[]).forEach((b,i)=>ev.push({t:'b',d:b.date||'',o:i,x:b}));
+  (item.sells||[]).forEach((sl,i)=>ev.push({t:'s',d:sl.date||'',o:i,x:sl}));
+  ev.sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.t===b.t?a.o-b.o:(a.t==='b'?-1:1));
+  const short=item.posType==='short';
+  let qty=0,posSize=0,margin=0,realized=0,boughtValue=0,soldValue=0,soldQty=0;
+  const sellInfo={};
+  for(const e of ev){
+    if(e.t==='b'){
+      const b=e.x,lev=b.leverage||1,v=b.qty*(b.price||0);
+      qty+=b.qty;posSize+=v;margin+=v/lev;boughtValue+=v;
+    }else if(qty>EPS){
+      const sl=e.x,q=Math.min(sl.qty,qty),avg=posSize/qty;
+      const real=(short?avg-sl.price:sl.price-avg)*q;
+      realized+=real;soldValue+=q*sl.price;soldQty+=q;
+      sellInfo[sl.id]={real,avg};
+      const f=(qty-q)/qty;
+      qty-=q;posSize*=f;margin*=f;
+      if(qty<=EPS){qty=0;posSize=0;margin=0;}
+    }
   }
   const avgLev=margin>0?posSize/margin:1;
   const avg=qty>0?posSize/qty:0;
-  return{qty,posSize,margin,avg,avgLev,cost:posSize,count:item.buys.length};
+  return{qty,posSize,margin,avg,avgLev,cost:posSize,count:(item.buys||[]).length,realized,boughtValue,soldValue,soldQty,sellInfo,
+    closed:qty<=EPS&&(item.sells||[]).length>0};
 }
 const keyOf=p=>p.coinId+'-'+(p.posType||'long');
 const findByKey=k=>portfolio.find(p=>keyOf(p)===k);
+const isOpen=it=>dca(it).qty>EPS;
+const openItems=()=>portfolio.filter(isOpen);
+const openIds=()=>[...new Set(openItems().map(p=>p.coinId))];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Sync status
@@ -747,7 +882,7 @@ function setSyncStatus(s){
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Cloud
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function pruneAlerts(){alerts=alerts.filter(a=>portfolio.some(p=>p.coinId===a.coinId));}
+function pruneAlerts(){alerts=alerts.filter(a=>openItems().some(p=>p.coinId===a.coinId));}
 async function saveCloud(){
   if(!currentUser)return false;
   setSyncStatus('syncing');
@@ -772,7 +907,7 @@ function listenCloud(userId){
     portfolio=d.portfolio||[];
     alerts=d.alerts||[];
     render();renderAlertBadge();
-    const key=[...new Set(portfolio.map(p=>p.coinId))].sort().join(',');
+    const key=openIds().sort().join(',');
     if(portfolio.length&&(firstSnap||key!==lastIdsKey))doRefresh();
     firstSnap=false;
     setSyncStatus('ok');
@@ -869,7 +1004,7 @@ async function fetchWithRetry(url,attempt=0){
 }
 
 async function doRefresh(manual){
-  const ids=[...new Set(portfolio.map(p=>p.coinId))];
+  const ids=openIds();
   if(!ids.length)return;
   if(refreshing){pendingRefresh=true;return;}
   refreshing=true;
@@ -952,15 +1087,16 @@ function sparkHTML(arr,w=48,h=24){
 
 // 7-day portfolio curve: each coin's hourly price × the quantity you hold today
 function buildCurve(base){
-  if(!portfolio.length)return null;
+  const items=openItems();
+  if(!items.length)return null;
   let L=Infinity;
-  for(const it of portfolio){
+  for(const it of items){
     const s=priceCache[it.coinId]?.spark;
     if(!s||s.length<10)return null;
     L=Math.min(L,s.length);
   }
   const totals=new Array(L).fill(base);
-  for(const it of portfolio){
+  for(const it of items){
     const{qty,posSize}=dca(it);
     const pc=priceCache[it.coinId],s=pc.spark,off=s.length-L;
     const short=it.posType==='short';
@@ -973,11 +1109,11 @@ function buildCurve(base){
   return totals;
 }
 
-function renderHeroChart(vals){
+function renderHeroChart(vals,emptyMsg='The chart appears once prices load'){
   const wrap=$('heroChart');
   if(!vals){
     chartVals=null;
-    wrap.innerHTML='<div class="chart-empty">The chart appears once prices load</div>';
+    wrap.innerHTML=`<div class="chart-empty">${emptyMsg}</div>`;
     return;
   }
   chartVals=vals;
@@ -1032,20 +1168,75 @@ function aggregate(items,isShort){
   return{margin,pnl,posSize};
 }
 
+const FILTERS=[['all','All'],['spot','Spot'],['long','Long'],['short','Short'],['gain','Gainers'],['loss','Losers'],['closed','Closed']];
+const typeLabel=it=>it.posType==='spot'?'Spot':it.posType==='short'?'Short':'Long';
+const isSpotItem=i=>i.posType==='spot',isLongItem=i=>!i.posType||i.posType==='long',isShortItem=i=>i.posType==='short';
+
+function metricsOf(it){
+  const pc=priceCache[it.coinId]||{},p=pc.usd,d=dca(it),short=it.posType==='short';
+  const pnl=(d.posSize>0&&p>0)?(short?d.posSize-p*d.qty:p*d.qty-d.posSize):null;
+  const raw=(d.avg>0&&p>0)?(short?(d.avg-p)/d.avg:(p-d.avg)/d.avg)*100:null;
+  return{value:d.margin+(pnl||0),pnl,pct:raw!=null?raw*d.avgLev:null,day:pc.usd_24h_change??null};
+}
+function applyFilter(items){
+  switch(filterKey){
+    case'spot':return items.filter(isSpotItem);
+    case'long':return items.filter(isLongItem);
+    case'short':return items.filter(isShortItem);
+    case'gain':return items.filter(i=>(metricsOf(i).pnl??0)>0);
+    case'loss':return items.filter(i=>(metricsOf(i).pnl??0)<0);
+    case'closed':return[];
+    default:return items;
+  }
+}
+function sortItems(items){
+  if(sortKey==='name')return items.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  return items.slice().sort((a,b)=>{
+    const x=metricsOf(a)[sortKey],y=metricsOf(b)[sortKey];
+    if(x==null&&y==null)return 0;
+    if(x==null)return 1;
+    if(y==null)return -1;
+    return y-x;
+  });
+}
+function filterCount(f,opens,closeds){
+  switch(f){
+    case'all':return opens.length+closeds.length;
+    case'spot':return opens.filter(isSpotItem).length;
+    case'long':return opens.filter(isLongItem).length;
+    case'short':return opens.filter(isShortItem).length;
+    case'gain':return opens.filter(i=>(metricsOf(i).pnl??0)>0).length;
+    case'loss':return opens.filter(i=>(metricsOf(i).pnl??0)<0).length;
+    case'closed':return closeds.length;
+  }
+  return 0;
+}
+function renderToolbar(opens,closeds){
+  const total=opens.length+closeds.length;
+  if(total<2||(filterKey!=='all'&&!filterCount(filterKey,opens,closeds)))filterKey='all';
+  $('toolbar').hidden=total<2;
+  $('filterChips').innerHTML=FILTERS.map(([k,label])=>{
+    const n=filterCount(k,opens,closeds);
+    if(k==='closed'&&!n)return'';
+    return`<button class="fchip${filterKey===k?' on':''}" data-f="${k}"${n||k==='all'?'':' disabled'}>${label}<span class="n">${n}</span></button>`;
+  }).join('');
+}
+
 function render(){
   const has=portfolio.length>0;
+  const opens=openItems();
+  const closeds=portfolio.filter(it=>dca(it).closed);
   $('summaryCard').hidden=!has;
-  $('holdingsCount').textContent=has?String(portfolio.length):'';
+  $('holdingsCount').textContent=opens.length?String(opens.length):'';
   if(!has){
     $('balanceCards').hidden=true;
     $('allocWrap').hidden=true;
+    $('toolbar').hidden=true;
     $('groups').innerHTML=`<div class="empty"><h3>No positions yet</h3><p>Add your first buy to start tracking your balance and profit.</p><button class="btn primary" onclick="openModal(null)">Add buy</button></div>`;
     return;
   }
 
-  const spots=portfolio.filter(p=>p.posType==='spot');
-  const longs=portfolio.filter(p=>!p.posType||p.posType==='long');
-  const shorts=portfolio.filter(p=>p.posType==='short');
+  const spots=opens.filter(isSpotItem),longs=opens.filter(isLongItem),shorts=opens.filter(isShortItem);
   const S=aggregate(spots,false),L=aggregate(longs,false),Sh=aggregate(shorts,true);
   const spotPnl=S.pnl,futPnl=L.pnl+Sh.pnl,totalPnL=spotPnl+futPnl;
   const marginSum=S.margin+L.margin+Sh.margin;
@@ -1060,7 +1251,7 @@ function render(){
   pill.textContent=`${fPnl(totalPnL)} (${fPctS(pct)})`;
   $('totMargin').textContent=fUSD(marginSum);
   let day=0,dayOK=false;
-  portfolio.forEach(it=>{
+  opens.forEach(it=>{
     const pc=priceCache[it.coinId];
     if(!pc||!(pc.usd>0)||pc.usd_24h_change==null||pc.usd_24h_change<=-100)return;
     const now=pc.usd*dca(it).qty,prev=now/(1+pc.usd_24h_change/100);
@@ -1069,7 +1260,12 @@ function render(){
   const dayEl=$('totDay');
   dayEl.textContent=dayOK?fPnl(day):'—';
   dayEl.className='v sensitive '+(dayOK?sgnCls(day):'');
-  renderHeroChart(buildCurve(base));
+  const anySells=portfolio.some(it=>(it.sells||[]).length);
+  const realizedTotal=portfolio.reduce((sum,it)=>sum+dca(it).realized,0);
+  const realEl=$('totRealized');
+  realEl.textContent=anySells?fPnl(realizedTotal):'—';
+  realEl.className='v sensitive '+(anySells?sgnCls(realizedTotal):'');
+  renderHeroChart(buildCurve(base),opens.length?undefined:'No open positions');
 
   // Spot and Future tiles
   $('balanceCards').hidden=false;
@@ -1084,19 +1280,26 @@ function render(){
   tile('spot',S,spots.length);
   tile('future',{margin:L.margin+Sh.margin,pnl:futPnl},longs.length+shorts.length);
 
-  // Allocation ribbon
-  const allocBase=portfolio.reduce((s,it)=>s+(priceCache[it.coinId]?.usd||0)*dca(it).qty,0);
-  if(portfolio.length>1&&allocBase>0){
+  // Allocation ribbon (open positions only)
+  const allocBase=opens.reduce((sum,it)=>sum+(priceCache[it.coinId]?.usd||0)*dca(it).qty,0);
+  if(opens.length>1&&allocBase>0){
     $('allocWrap').hidden=false;
-    const parts=portfolio.map((it,i)=>{const share=(priceCache[it.coinId]?.usd||0)*dca(it).qty/allocBase*100;return{it,i,share};});
+    const parts=opens.map(it=>{const share=(priceCache[it.coinId]?.usd||0)*dca(it).qty/allocBase*100;return{it,i:portfolio.indexOf(it),share};});
     $('allocBar').innerHTML=parts.map(p=>`<i style="flex:${p.share};background:${col(p.i)}" title="${esc(p.it.symbol)} ${p.share.toFixed(1)}%"></i>`).join('');
     $('allocLegend').innerHTML=parts.map(p=>`<span class="lg"><i style="background:${col(p.i)}"></i>${esc(p.it.symbol)} ${p.share.toFixed(1)}%</span>`).join('');
     $('allocLegend').hidden=!allocOpen;
   }else $('allocWrap').hidden=true;
 
-  // Positions
-  const groups=[['spot',spots,S],['long',longs,L],['short',shorts,Sh]];
-  $('groups').innerHTML=groups.filter(g=>g[1].length).map(([t,items,a])=>groupHTML(t,items,a)).join('');
+  // Positions: filter, sort, group
+  renderToolbar(opens,closeds);
+  const shown=sortItems(applyFilter(opens));
+  let html='';
+  [['spot',shown.filter(isSpotItem)],['long',shown.filter(isLongItem)],['short',shown.filter(isShortItem)]].forEach(([t,items])=>{
+    if(items.length)html+=groupHTML(t,items,aggregate(items,t==='short'));
+  });
+  if((filterKey==='all'||filterKey==='closed')&&closeds.length)html+=closedGroupHTML(closeds);
+  if(!html)html=`<div class="empty"><h3>Nothing matches</h3><p>No positions fit this filter.</p><button class="btn ghost" onclick="setFilter('all')">Show all</button></div>`;
+  $('groups').innerHTML=html;
 }
 
 function groupHTML(type,items,agg){
@@ -1113,27 +1316,57 @@ function groupHTML(type,items,agg){
     <div class="group-body"${open?'':' hidden'}>${items.map(it=>coinHTML(it,portfolio.indexOf(it))).join('')}</div>
   </section>`;
 }
+function closedGroupHTML(items){
+  const open=!!groupOpen.closed;
+  const real=items.reduce((sum,it)=>sum+dca(it).realized,0);
+  return`<section class="group closed">
+    <button class="group-head" aria-expanded="${open}" onclick="toggleSection('closed')">
+      <span class="g-mark">${ic('closed',18)}</span>
+      <span><span class="g-name">Closed</span><span class="g-sub">${items.length} ${items.length===1?'position':'positions'}</span></span>
+      <span class="g-val"><b class="sensitive ${sgnCls(real)}">${fPnl(real)}</b><span class="g-sub">realized</span></span>
+      <span class="g-chev">${ic('chevron',18)}</span>
+    </button>
+    <div class="group-body"${open?'':' hidden'}>${items.map(it=>coinHTML(it,portfolio.indexOf(it))).join('')}</div>
+  </section>`;
+}
+
+// Estimated liquidation price (isolated margin, 0.5% maintenance rate). Futures only.
+const MMR=0.005;
+function liqPrice(item){
+  const t=item.posType||'long';
+  if(t==='spot')return null;
+  const d=dca(item);
+  if(d.qty<=EPS||d.avgLev<=1.05||!(d.avg>0))return null;
+  const v=t==='short'?d.avg*(1+1/d.avgLev-MMR):d.avg*(1-1/d.avgLev+MMR);
+  return v>0?v:null;
+}
+function levelRow(label,price,hit,p){
+  const off=p>0?(price-p)/p*100:null;
+  return`<div class="risk-row"><span>${label}</span><b class="sensitive">${fUSD(price)}</b><small>${hit?'Triggered':off==null?'':fPctS(off)+' from price'}</small></div>`;
+}
 
 function coinHTML(item,idx){
   const pc=priceCache[item.coinId]||{};
   const p=pc.usd,priceLoaded=p!=null;
   const ch24=pc.usd_24h_change;
-  const{qty,posSize,margin,avg,avgLev,count}=dca(item);
+  const d=dca(item);
+  const{qty,posSize,margin,avg,avgLev,count}=d;
+  const closed=d.closed;
   const isShort=item.posType==='short';
   const lev=(item.posType==='long'||item.posType==='short')&&avgLev>1.05?avgLev:0;
-  const pnl=(posSize>0&&p>0)?(isShort?posSize-p*qty:p*qty-posSize):null;
-  const rawPct=(posSize>0&&p>0)?(isShort?(avg-p)/avg*100:(p-avg)/avg*100):null;
+  const pnl=(!closed&&posSize>0&&p>0)?(isShort?posSize-p*qty:p*qty-posSize):null;
+  const rawPct=(!closed&&posSize>0&&p>0)?(isShort?(avg-p)/avg*100:(p-avg)/avg*100):null;
   const pnlPct=rawPct!=null?rawPct*avgLev:null;
-  const key=keyOf(item),isOpen=openCard===key,color=col(idx);
+  const key=keyOf(item),expanded=openCard===key,color=col(idx);
   const sym0=(item.symbol||'?').charAt(0).toUpperCase().replace(/[^\p{L}\p{N}]/u,'?');
   const icon=item.image
     ?`<img class="coin-ic" src="${esc(item.image)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=coin-fb style=background:${color}>${sym0}</span>'">`
     :`<span class="coin-fb" style="background:${color}">${esc(sym0)}</span>`;
-  const myAlerts=alerts.filter(a=>a.coinId===item.coinId&&a.active);
+  const myAlerts=closed?[]:alerts.filter(a=>a.coinId===item.coinId&&a.active);
 
   const buyRows=item.buys.map((b,bi)=>{
     const bl=b.leverage||1;
-    const bRaw=(b.price>0&&p>0)?(isShort?(b.price-p)/b.price*100:(p-b.price)/b.price*100):null;
+    const bRaw=(!closed&&b.price>0&&p>0)?(isShort?(b.price-p)/b.price*100:(p-b.price)/b.price*100):null;
     const bPnl=bRaw!=null?bRaw*bl:null;
     const extra=[b.date,b.note].filter(Boolean).map(esc).join(' · ');
     return`<div class="buy">
@@ -1148,32 +1381,71 @@ function coinHTML(item,idx){
     </div>`;
   }).join('');
 
+  const sells=item.sells||[];
+  const sellRows=sells.map((sl,si)=>{
+    const inf=d.sellInfo[sl.id],real=inf?inf.real:null;
+    const extra=[sl.date,sl.note].filter(Boolean).map(esc).join(' · ');
+    return`<div class="buy">
+      <span class="buy-n">S${si+1}</span>
+      <div class="buy-info">
+        <div class="buy-main"><span class="sensitive">${fNum(sl.qty)} ${esc(item.symbol)}</span><span class="sensitive">${fPrice(sl.qty*sl.price)}</span></div>
+        <div class="buy-sub"><span>${item.posType==='spot'?'Sold':'Closed'} at ${fUSD(sl.price)}</span>${real!=null?`<span class="${sgnCls(real)} sensitive">${fPnl(real)}</span>`:''}</div>
+        ${extra?`<div class="buy-sub"><span>${extra}</span></div>`:''}
+      </div>
+      <span class="ibtn"></span>
+      <button class="ibtn del" aria-label="Delete sale" onclick="delSell('${esc(key)}','${esc(sl.id)}')">${ic('trash',16)}</button>
+    </div>`;
+  }).join('');
+
+  // Risk rows: liquidation estimate, stop-loss, take-profit
+  const riskRows=[];
+  const liq=closed?null:liqPrice(item);
+  if(liq){
+    const dist=p>0?(isShort?(liq-p)/p:(p-liq)/p)*100:null;
+    const near=dist!=null&&dist<10;
+    riskRows.push(`<div class="risk-row"><span>Est. liquidation</span><b class="sensitive ${near?'neg':''}">${fUSD(liq)}</b><small>${dist==null?'':dist<=0?'reached':fPct(dist)+' away'}</small></div>`);
+  }
+  if(!closed&&item.sl>0)riskRows.push(levelRow('Stop-loss',item.sl,item.slHit,p));
+  if(!closed&&item.tp>0)riskRows.push(levelRow('Take-profit',item.tp,item.tpHit,p));
+
+  const statsHTML=closed
+    ?`<div><div class="k">Entry value</div><div class="v sensitive">${fUSD(d.boughtValue)}</div></div>
+       <div><div class="k">Exit value</div><div class="v sensitive">${fUSD(d.soldValue)}</div></div>
+       <div><div class="k">Realized</div><div class="v sensitive ${sgnCls(d.realized)}">${fPnl(d.realized)}</div></div>`
+    :`<div><div class="k">Avg buy</div><div class="v sensitive">${avg>0?fUSD(avg):'—'}</div></div>
+       <div><div class="k">${avgLev>1.05?`Margin (${avgLev.toFixed(1)}×)`:'Invested'}</div><div class="v sensitive">${margin>0?fUSD(margin):'—'}</div></div>
+       <div><div class="k">Profit / loss</div><div class="v sensitive ${pnl!=null?sgnCls(pnl):''}">${pnl!=null?fPnl(pnl):'—'}</div></div>`;
+
+  const closeLabel=item.posType==='spot'?'Sell':'Close';
   return`<article class="coin" data-key="${esc(key)}">
-    <button class="coin-head" aria-expanded="${isOpen}" onclick="toggleCard('${esc(key)}')">
+    <button class="coin-head" aria-expanded="${expanded}" onclick="toggleCard('${esc(key)}')">
       ${icon}
       <span class="coin-id">
         <span class="coin-name"><span>${esc(item.name)}</span>${lev?`<span class="lev">${lev.toFixed(1)}×</span>`:''}</span>
-        <span class="coin-meta sensitive">${fNum(qty)} ${esc(item.symbol)}</span>
+        <span class="coin-meta sensitive">${closed?typeLabel(item)+' · closed':fNum(qty)+' '+esc(item.symbol)}</span>
       </span>
-      ${sparkHTML(pc.spark)}
+      ${closed?'<span class="sp"></span>':sparkHTML(pc.spark)}
       <span class="coin-num">
-        <span class="coin-val sensitive">${priceLoaded?fPrice(margin+(pnl||0)):'<span class="price-loading">Loading…</span>'}</span>
-        ${pnl!==null?`<span class="pill ${sgnCls(pnl)} sensitive">${fPctS(pnlPct)}</span>`:''}
+        ${closed
+          ?`<span class="coin-val sensitive ${sgnCls(d.realized)}">${fPnl(d.realized)}</span><span class="coin-meta">Realized</span>`
+          :`<span class="coin-val sensitive">${priceLoaded?fPrice(margin+(pnl||0)):'<span class="price-loading">Loading…</span>'}</span>
+            ${pnl!==null?`<span class="pill ${sgnCls(pnl)} sensitive">${fPctS(pnlPct)}</span>`:''}`}
       </span>
     </button>
-    <div class="coin-body"${isOpen?'':' hidden'}>
-      <div class="price-line"><span>Price <b>${priceLoaded?fUSD(p):'—'}</b></span>${ch24!=null?`<span class="${sgnCls(ch24)}">${fPctS(ch24)} in 24h</span>`:''}</div>
-      <div class="stats">
-        <div><div class="k">Avg buy</div><div class="v sensitive">${avg>0?fUSD(avg):'—'}</div></div>
-        <div><div class="k">${avgLev>1.05?`Margin (${avgLev.toFixed(1)}×)`:'Invested'}</div><div class="v sensitive">${margin>0?fUSD(margin):'—'}</div></div>
-        <div><div class="k">Profit / loss</div><div class="v sensitive ${pnl!=null?sgnCls(pnl):''}">${pnl!=null?fPnl(pnl):'—'}</div></div>
-      </div>
+    <div class="coin-body"${expanded?'':' hidden'}>
+      ${closed?'':`<div class="price-line"><span>Price <b>${priceLoaded?fUSD(p):'—'}</b></span>${ch24!=null?`<span class="${sgnCls(ch24)}">${fPctS(ch24)} in 24h</span>`:''}</div>`}
+      <div class="stats">${statsHTML}</div>
+      ${!closed&&d.soldQty>0?`<div class="realized-line"><span>Realized so far</span><b class="sensitive ${sgnCls(d.realized)}">${fPnl(d.realized)}</b></div>`:''}
+      ${riskRows.length?`<div class="risk">${riskRows.join('')}</div>`:''}
       ${myAlerts.length?`<div class="alerts-row"><span class="k">Alerts</span>${myAlerts.map(a=>`<span class="chip">${a.dir==='above'?'Above':'Below'} ${fUSD(a.price)}<button aria-label="Remove alert" onclick="delAlert('${esc(a.id)}')">${ic('x',12)}</button></span>`).join('')}</div>`:''}
       <div class="buys-head"><span>Buy history (${count})</span></div>
       ${buyRows}
+      ${sells.length?`<div class="buys-head"><span>${item.posType==='spot'?'Sell':'Close'} history (${sells.length})</span></div>${sellRows}`:''}
       <div class="coin-actions">
         <button class="btn ghost sm" onclick="openModal('${esc(key)}')">${ic('plus',16)}Add buy</button>
+        ${closed?'':`<button class="btn ghost sm" onclick="openSell('${esc(key)}')">${ic('minus',16)}${closeLabel}</button>
         <button class="btn ghost sm" onclick="openAlerts('${esc(item.coinId)}')">${ic('bell',16)}Alert</button>
+        <button class="btn ghost sm" onclick="openRisk('${esc(key)}')">${ic('shield',16)}SL / TP</button>`}
         <button class="btn danger sm" onclick="delCoin('${esc(key)}')">${ic('trash',16)}Remove</button>
       </div>
     </div>
@@ -1231,6 +1503,20 @@ function checkAlerts(){
     showToast(msg,'warning',9000);
     notify('Price alert: '+a.symbol,msg,'ct-'+a.id);
   }
+  // Stop-loss and take-profit levels on open positions (each fires once until you change it)
+  for(const it of openItems()){
+    const p=priceCache[it.coinId]?.usd;
+    if(!(p>0))continue;
+    const short=it.posType==='short';
+    const hit=(kind,level)=>{
+      const msg=`${it.name} ${typeLabel(it).toLowerCase()} hit your ${kind==='sl'?'stop-loss':'take-profit'} at ${fUSD(level)} (now ${fUSD(p)})`;
+      showToast(msg,kind==='sl'?'error':'success',10000);
+      notify((kind==='sl'?'Stop-loss: ':'Take-profit: ')+it.symbol,msg,'ct-'+kind+'-'+keyOf(it));
+      fired=true;
+    };
+    if(it.sl>0&&!it.slHit&&(short?p>=it.sl:p<=it.sl)){it.slHit=Date.now();hit('sl',it.sl);}
+    if(it.tp>0&&!it.tpHit&&(short?p<=it.tp:p>=it.tp)){it.tpHit=Date.now();hit('tp',it.tp);}
+  }
   if(fired){saveCloud();render();renderAlertBadge();if(!$('alertModal').hidden)renderAlertList();}
 }
 function updateAlHint(){
@@ -1266,9 +1552,9 @@ $('alDir').addEventListener('click',e=>{
 });
 $('alCoin').addEventListener('change',updateAlHint);
 window.openAlerts=coinId=>{
-  if(!portfolio.length){showToast('Add a coin first, then set an alert for it.','info');return;}
+  if(!openItems().length){showToast('Add an open position first, then set an alert for it.','info');return;}
   const seen=new Set(),coins=[];
-  portfolio.forEach(p=>{if(!seen.has(p.coinId)){seen.add(p.coinId);coins.push(p);}});
+  openItems().forEach(p=>{if(!seen.has(p.coinId)){seen.add(p.coinId);coins.push(p);}});
   $('alCoin').innerHTML=coins.map(p=>`<option value="${esc(p.coinId)}">${esc(p.name)} (${esc(p.symbol)})</option>`).join('');
   if(coinId)$('alCoin').value=coinId;
   alDir='above';
@@ -1414,7 +1700,7 @@ $('openAddBtn').addEventListener('click',()=>openModal(null));
 $('cancelBtn').addEventListener('click',()=>closeModal());
 
 // Escape closes whichever sheet is open
-const sheetClosers={alertModal:()=>closeAlerts(),editBuyModal:()=>closeEditBuy(),modal:()=>closeModal(),userMenu:()=>closeUserMenu()};
+const sheetClosers={sellModal:()=>closeSell(),riskModal:()=>closeRisk(),alertModal:()=>closeAlerts(),editBuyModal:()=>closeEditBuy(),modal:()=>closeModal(),userMenu:()=>closeUserMenu()};
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   for(const id of Object.keys(sheetClosers)){if(!$(id).hidden){sheetClosers[id]();break;}}
@@ -1554,6 +1840,160 @@ $('saveBtn').addEventListener('click',()=>{
   render();
   doRefresh();
 });
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Sell / close a position
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let sellKey=null;
+function setSheetCoin(prefix,item){
+  const img=$(prefix+'Img');
+  if(item.image){img.src=item.image;img.style.display='';}else img.style.display='none';
+}
+window.openSell=key=>{
+  const item=findByKey(key);if(!item)return;
+  const d=dca(item);if(d.qty<=EPS)return;
+  sellKey=key;
+  const spot=item.posType==='spot';
+  $('sellTitle').textContent=spot?`Sell ${item.name}`:`Close ${item.name} ${typeLabel(item).toLowerCase()}`;
+  $('sellPriceLabel').textContent=spot?'Sell price (USD)':'Exit price (USD)';
+  $('sellSaveBtn').textContent=spot?'Record sale':'Record close';
+  setSheetCoin('sell',item);
+  $('sellName').textContent=`${item.name} (${item.symbol})`;
+  $('sellMeta').textContent=`You hold ${fNumFull(d.qty)} ${item.symbol}`;
+  const p=priceCache[item.coinId]?.usd;
+  $('sellQty').value='';
+  $('sellPrice').value=p>0?String(p):'';
+  $('sellDate').value=new Date().toISOString().split('T')[0];
+  $('sellNote').value='';
+  updateSell();
+  $('sellModal').hidden=false;
+  setTimeout(()=>$('sellQty').focus(),300);
+};
+window.closeSell=()=>{$('sellModal').hidden=true;sellKey=null;};
+function updateSell(){
+  const item=findByKey(sellKey);if(!item)return;
+  const d=dca(item),short=item.posType==='short';
+  const q=parseFloat($('sellQty').value),pr=parseFloat($('sellPrice').value);
+  const hint=$('sellHint');hint.className='hint';hint.textContent='';
+  let ok=q>0&&pr>0;
+  if(q>d.qty*(1+1e-9)){hint.textContent=`You only hold ${fNumFull(d.qty)} ${item.symbol}`;hint.className='hint err';ok=false;}
+  if(ok){
+    const real=(short?d.avg-pr:pr-d.avg)*q;
+    const pct=d.avg>0?(short?(d.avg-pr)/d.avg:(pr-d.avg)/d.avg)*100*d.avgLev:null;
+    $('sv-real').textContent=`${fPnl(real)}${pct!=null?` (${fPctS(pct)})`:''}`;
+    $('sv-real').className='pv-v '+sgnCls(real);
+    $('sv-exit').textContent=fUSD(q*pr);
+    $('sv-avg').textContent=d.avg>0?fUSD(d.avg):'—';
+    $('sv-left').textContent=fNumFull(Math.max(0,d.qty-q))+' '+item.symbol;
+    $('sellPreview').hidden=false;
+  }else $('sellPreview').hidden=true;
+  $('sellSaveBtn').disabled=!ok;
+}
+$('sellQty').addEventListener('input',updateSell);
+$('sellPrice').addEventListener('input',updateSell);
+$('sellQuick').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const item=findByKey(sellKey);if(!item)return;
+  const d=dca(item),pct=+b.dataset.pct;
+  $('sellQty').value=String(pct===100?d.qty:Number((d.qty*pct/100).toPrecision(12)));
+  updateSell();
+});
+window.saveSell=()=>{
+  const item=findByKey(sellKey);if(!item)return;
+  const d=dca(item),short=item.posType==='short';
+  let q=parseFloat($('sellQty').value);
+  const pr=parseFloat($('sellPrice').value);
+  if(!(q>0)||!(pr>0))return;
+  if(q>d.qty*(1+1e-9)){showToast(`You only hold ${fNumFull(d.qty)} ${item.symbol}`,'error');return;}
+  q=Math.min(q,d.qty);
+  const real=(short?d.avg-pr:pr-d.avg)*q;
+  (item.sells=item.sells||[]).push({id:uid(),qty:q,price:pr,date:$('sellDate').value,note:$('sellNote').value.trim()});
+  const closedNow=dca(item).qty<=EPS;
+  if(closedNow){if(openCard===keyOf(item))openCard=null;pruneAlerts();renderAlertBadge();}
+  closeSell();
+  showToast(closedNow?`${item.name} closed · ${fPnl(real)} realized`:`${fNum(q)} ${item.symbol} ${item.posType==='spot'?'sold':'closed'} · ${fPnl(real)} realized`,real>=0?'success':'info',4500);
+  saveCloud();render();
+};
+window.delSell=(cardKey,sellId)=>{
+  const item=findByKey(cardKey);if(!item)return;
+  if(!confirm('Delete this sale? Your holding goes back up by that amount.'))return;
+  item.sells=(item.sells||[]).filter(x=>x.id!==sellId);
+  showToast('Sale deleted','info');
+  saveCloud();render();doRefresh();
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Stop-loss and take-profit
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let riskKey=null;
+window.openRisk=key=>{
+  const item=findByKey(key);if(!item)return;
+  const d=dca(item);if(d.qty<=EPS)return;
+  riskKey=key;
+  setSheetCoin('risk',item);
+  $('riskName').textContent=`${item.name} · ${typeLabel(item)}`;
+  const p=priceCache[item.coinId]?.usd;
+  $('riskMeta').textContent=`Avg buy ${d.avg>0?fUSD(d.avg):'—'} · Price ${p>0?fUSD(p):'—'}`;
+  $('riskSL').value=item.sl||'';
+  $('riskTP').value=item.tp||'';
+  $('riskNote').hidden=!liqPrice(item);
+  updateRisk();
+  $('riskModal').hidden=false;
+};
+window.closeRisk=()=>{$('riskModal').hidden=true;riskKey=null;};
+function updateRisk(){
+  const item=findByKey(riskKey);if(!item)return;
+  const d=dca(item),p=priceCache[item.coinId]?.usd,short=item.posType==='short';
+  const sl=parseFloat($('riskSL').value)||null,tp=parseFloat($('riskTP').value)||null;
+  const plAt=price=>(short?d.avg-price:price-d.avg)*d.qty;
+  const check=(kind,price)=>{
+    if(!price)return{msg:'',err:false,pl:null};
+    if(p>0){
+      const wrong=kind==='sl'?(short?price<=p:price>=p):(short?price>=p:price<=p);
+      if(wrong){
+        const need=kind==='sl'?(short?'above':'below'):(short?'below':'above');
+        return{msg:`Must be ${need} the current price (${fUSD(p)})`,err:true,pl:null};
+      }
+    }
+    const pl=plAt(price),off=p>0?(price-p)/p*100:null;
+    return{msg:`${off!=null?fPctS(off)+' from price · ':''}${fPnl(pl)} if reached`,err:false,pl};
+  };
+  const a=check('sl',sl),b=check('tp',tp);
+  [['riskSLHint',a],['riskTPHint',b]].forEach(([id,r])=>{$(id).textContent=r.msg;$(id).className='hint'+(r.err?' err':'');});
+  $('riskSL').classList.toggle('invalid',a.err);
+  $('riskTP').classList.toggle('invalid',b.err);
+  const liq=liqPrice(item);
+  const rr=(a.pl!=null&&b.pl!=null&&a.pl<0&&b.pl>0)?`1 : ${(b.pl/-a.pl).toFixed(1)}`:'—';
+  $('rv-rr').textContent=rr;
+  $('rv-liq').textContent=liq?fUSD(liq):'—';
+  $('riskPreview').hidden=!(liq||rr!=='—');
+  $('riskSaveBtn').disabled=a.err||b.err;
+}
+$('riskSL').addEventListener('input',updateRisk);
+$('riskTP').addEventListener('input',updateRisk);
+window.saveRisk=()=>{
+  const item=findByKey(riskKey);if(!item)return;
+  const sl=parseFloat($('riskSL').value)||null,tp=parseFloat($('riskTP').value)||null;
+  if((item.sl||null)!==sl)item.slHit=null;
+  if((item.tp||null)!==tp)item.tpHit=null;
+  item.sl=sl;item.tp=tp;
+  closeRisk();
+  showToast(sl||tp?`Levels saved for ${item.name}`:`Levels cleared for ${item.name}`,'success');
+  saveCloud();render();
+  checkAlerts();
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Sort and filter
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+window.setFilter=f=>{filterKey=f;store.set('ct-filter',f);render();};
+$('filterChips').addEventListener('click',e=>{
+  const b=e.target.closest('.fchip');
+  if(!b||b.disabled)return;
+  setFilter(b.dataset.f);
+});
+$('sortSel').value=sortKey;
+$('sortSel').addEventListener('change',e=>{sortKey=e.target.value;store.set('ct-sort',sortKey);render();});
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Start
