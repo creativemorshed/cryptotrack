@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cryptotrack-v10';
+const CACHE_NAME = 'cryptotrack-v11';
 const urlsToCache = [
   './',
   './index.html',
