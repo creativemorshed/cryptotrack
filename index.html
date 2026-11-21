@@ -37,6 +37,7 @@
       --gain:#08794E;--gain-bg:rgba(8,121,78,.10);
       --loss:#D0324A;--loss-bg:rgba(208,50,74,.10);
       --spot:#2F6FDB;--spot-bg:rgba(47,111,219,.10);
+      --sec-long:#0D9488;--sec-short:#7C3AED;--sec-closed:#64748B;
       --shadow:0 1px 2px rgba(14,26,38,.05),0 10px 28px -14px rgba(14,26,38,.22);
       --shadow-sm:0 1px 2px rgba(14,26,38,.12);
       --scrim:rgba(14,26,38,.46);
@@ -49,6 +50,7 @@
       --gain:#3DDC97;--gain-bg:rgba(61,220,151,.12);
       --loss:#FF6B7F;--loss-bg:rgba(255,107,127,.13);
       --spot:#6AA6FF;--spot-bg:rgba(106,166,255,.13);
+      --sec-long:#2DD4BF;--sec-short:#A78BFA;--sec-closed:#94A3B8;
       --shadow:0 0 0 1px rgba(255,255,255,.02) inset,0 12px 32px -16px rgba(0,0,0,.75);
       --shadow-sm:0 1px 2px rgba(0,0,0,.5);
       --scrim:rgba(3,7,12,.66);
@@ -223,21 +225,28 @@
     .empty h3{font:700 20px var(--display);letter-spacing:-.02em;margin-bottom:6px}
     .empty p{color:var(--sub);margin:0 auto 18px;max-width:260px}
 
-    .group{margin:0 16px 12px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow),0 0 0 1px var(--line-soft);overflow:hidden}
+    /* Each section has its own color (--c); each coin card has its own color too, kept when expanded */
+    .group{--c:var(--spot);margin:0 16px 12px;background:var(--surface);border-radius:var(--r-lg);border-left:6px solid var(--c);box-shadow:var(--shadow),0 0 0 1.5px color-mix(in srgb,var(--c) 38%,var(--line-soft));overflow:hidden}
+    .group.long{--c:var(--sec-long)}.group.short{--c:var(--sec-short)}.group.closed{--c:var(--sec-closed)}
+    .group-head{background:color-mix(in srgb,var(--c) 11%,transparent)}
+    .group-head[aria-expanded="true"]{background:color-mix(in srgb,var(--c) 16%,transparent)}
     .group-head{display:grid;grid-template-columns:36px 1fr auto 20px;gap:12px;align-items:center;width:100%;padding:14px 16px}
     .g-mark{width:36px;height:36px;border-radius:12px;display:grid;place-items:center}
-    .group.spot .g-mark{background:var(--spot-bg);color:var(--spot)}
-    .group.long .g-mark{background:var(--gain-bg);color:var(--gain)}
-    .group.short .g-mark{background:var(--loss-bg);color:var(--loss)}
+    .g-mark{background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c)}
+    .g-name{color:var(--c)}
     .g-name{display:block;font-weight:700;font-size:16px}
     .g-sub{display:block;font-size:12px;color:var(--muted)}
     .g-val{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
     .g-val b{font:700 16px/1.1 var(--display);letter-spacing:-.01em}
     .g-chev{color:var(--muted);transition:transform .2s}
     .group-head[aria-expanded="true"] .g-chev{transform:rotate(180deg)}
-    .group-body{border-top:1px solid var(--line-soft)}
+    .group-body{border-top:1px solid color-mix(in srgb,var(--c) 30%,var(--line-soft));padding:10px;display:grid;gap:10px;background:color-mix(in srgb,var(--c) 4%,transparent)}
 
-    .coin+.coin{border-top:1px solid var(--line-soft)}
+    .coin{--c:var(--spot);background:var(--surface);border-radius:var(--r-md);border-left:5px solid var(--c);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 30%,var(--line-soft));overflow:hidden}
+    .coin-head{background:color-mix(in srgb,var(--c) 8%,transparent)}
+    .coin.open{box-shadow:0 0 0 2px var(--c)}
+    .coin.open .coin-head{background:color-mix(in srgb,var(--c) 15%,transparent)}
+    .coin.open .coin-body{background:color-mix(in srgb,var(--c) 5%,transparent)}
     .coin-head{display:grid;grid-template-columns:38px minmax(0,1fr) 48px auto;gap:10px;align-items:center;width:100%;padding:14px 16px}
     @media (max-width:339px){.sp{display:none}.coin-head{grid-template-columns:38px minmax(0,1fr) auto}}
     .coin-head:active{background:var(--raised)}
@@ -352,7 +361,6 @@
     .fchip .n{margin-left:5px;font-weight:500;opacity:.6}
     .fchip.on{background:var(--text);color:var(--bg);box-shadow:none}
     .fchip:disabled{opacity:.4;cursor:default}
-    .group.closed .g-mark{background:var(--raised);color:var(--muted)}
     .g-val b.pos{color:var(--gain)}.g-val b.neg{color:var(--loss)}
     .coin-val.pos{color:var(--gain)}.coin-val.neg{color:var(--loss)}
     .stats .v.pos,.realized-line b.pos,.risk-row b.pos{color:var(--gain)}
@@ -361,7 +369,7 @@
     .risk{margin-top:12px;border-radius:var(--r-md);box-shadow:inset 0 0 0 1px var(--line-soft);padding:2px 14px}
     .risk-row{display:flex;align-items:center;gap:8px;padding:10px 0;font-size:13px}
     .risk-row+.risk-row{border-top:1px solid var(--line-soft)}
-    .risk-row>span{flex:1;color:var(--sub)}
+    .risk-row>span{flex:1;color:var(--sub);white-space:nowrap}
     .risk-row small{font-size:12px;color:var(--muted);text-align:right}
     .quick{display:flex;gap:6px;margin-top:8px}
     .quick button{flex:1;height:34px;border-radius:var(--r-sm);background:var(--raised);font-size:12px;font-weight:600;color:var(--sub);text-align:center}
@@ -1625,7 +1633,7 @@ function coinHTML(item,idx){
        <div><div class="k">Profit / loss</div><div class="v sensitive ${pnl!=null?sgnCls(pnl):''}">${pnl!=null?fPnl(pnl):'—'}</div></div>`;
 
   const closeLabel=item.posType==='spot'?'Sell':'Close';
-  return`<article class="coin" data-key="${esc(key)}">
+  return`<article class="coin${expanded?' open':''}" style="--c:${color}" data-key="${esc(key)}">
     <button class="coin-head" aria-expanded="${expanded}" onclick="toggleCard('${esc(key)}')">
       ${icon}
       <span class="coin-id">
@@ -1679,6 +1687,7 @@ window.toggleCard=key=>{
   openCard=openCard===key?null:key;
   document.querySelectorAll('.coin').forEach(el=>{
     const open=el.dataset.key===openCard;
+    el.classList.toggle('open',open);
     el.querySelector('.coin-head').setAttribute('aria-expanded',open);
     el.querySelector('.coin-body').hidden=!open;
   });
