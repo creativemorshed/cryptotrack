@@ -169,7 +169,8 @@
     .d-amt{font:700 20px/1 var(--display);letter-spacing:-.02em}
     .d-pct{padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.3}
     .delta.pos .d-pct,.delta.pos .d-arrow{background:var(--gain-bg)}.delta.neg .d-pct,.delta.neg .d-arrow{background:var(--loss-bg)}.delta.flat .d-pct,.delta.flat .d-arrow{background:var(--raised)}
-    .period{margin-top:12px}
+    .period{margin-top:14px}
+    .link-btn{color:var(--accent-text);font-weight:700;text-decoration:underline}
     .period .seg-btn{height:30px;font-size:12px;border-radius:9px}
     .chart{position:relative;height:128px;margin:12px -20px 0;touch-action:pan-y;cursor:crosshair}
     .chart svg{width:100%;height:100%}
@@ -420,13 +421,6 @@
           </div>
         </div>
         <div class="setting">
-          <span class="k">Chart style</span>
-          <div class="seg" id="chartSeg">
-            <button class="seg-btn" data-style="line">Line</button>
-            <button class="seg-btn" data-style="candle">Candles</button>
-          </div>
-        </div>
-        <div class="setting">
           <label class="k" for="refreshSel">Refresh prices</label>
           <select class="input" id="refreshSel">
             <option value="0">Off</option>
@@ -459,14 +453,13 @@
         <div class="hero-value sensitive" id="totalValue">$0.00</div>
         <div class="delta flat sensitive" id="totPnl" aria-live="polite">—</div>
       </div>
-      <div class="chart" id="heroChart" aria-label="Portfolio value chart"></div>
       <div class="seg period" id="periodSeg" role="tablist" aria-label="Time period">
         <button class="seg-btn" data-p="1w" role="tab">Week</button>
         <button class="seg-btn" data-p="1m" role="tab">Month</button>
         <button class="seg-btn" data-p="1y" role="tab">Year</button>
         <button class="seg-btn" data-p="all" role="tab">All time</button>
       </div>
-      <div class="chart-cap" id="chartCap">Based on what you hold today</div>
+      <div class="chart-cap" id="chartCap">Since you started investing</div>
       <div class="hero-stats">
         <div class="hs"><div class="k">Invested</div><div class="v sensitive" id="totMargin">—</div></div>
         <div class="hs"><div class="k">Last 24 hours</div><div class="v sensitive" id="totDay">—</div></div>
@@ -759,10 +752,8 @@ let themePref=store.get('ct-theme','system');
 let sortKey=store.get('ct-sort','value'),filterKey=store.get('ct-filter','all');
 if(!['value','pct','pnl','day','name'].includes(sortKey))sortKey='value';
 let refreshTimer=null,refreshing=false,pendingRefresh=false,lastUpdate=0,lastIdsKey='',firstSnap=true;
-let chartSrc=null,chartMode='line',chartCandles=null,chartScale=null,chartRevealed=false;
-let period=store.get('ct-period','all'),chartStyle=store.get('ct-chart','line');
+let period=store.get('ct-period','all');
 if(!['1w','1m','1y','all'].includes(period))period='all';
-if(!['line','candle'].includes(chartStyle))chartStyle='line';
 const histCache={};let histBusy=false,histFailAt=0,histToken=0;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1126,22 +1117,21 @@ function sparkHTML(arr,w=48,h=24){
   return`<span class="sp${up?' up':''}"><svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><path d="${d}"/></svg></span>`;
 }
 
-// ── Portfolio history for the chart ──
-// Week uses the 7-day sparkline we already have. Month, Year and All time load each coin's price
-// history from CoinGecko once and keep it for a while.
+// ── Profit or loss for a period, counted from when you started investing ──
+// Week, Month and Year show how much you gained or lost on your positions over that time,
+// but never before you bought them. All time runs from your first buy.
+// Week uses the 7-day sparkline we already have. Month and Year load each coin's price history
+// from CoinGecko once (only for coins you already held at the start) and keep it for a while.
 const HIST_TTL=d=>d<=31?15*60e3:3*3600e3;
-function periodDays(){
-  if(period==='1w')return 7;
-  if(period==='1m')return 30;
-  if(period==='1y')return 365;
-  // All time: from your first buy, capped at what the free CoinGecko plan serves (365 days)
+const PERIOD_DAYS={'1w':7,'1m':30,'1y':365};
+const isoDay=t=>new Date(t).toISOString().slice(0,10);
+function firstBuyMs(){
   let first=Infinity;
-  for(const it of openItems())for(const b of it.buys||[]){
+  for(const it of portfolio)for(const b of it.buys||[]){
     const t=Date.parse(b.date);
     if(!isNaN(t))first=Math.min(first,t);
   }
-  if(!isFinite(first))return 7;
-  return Math.min(365,Math.max(7,Math.ceil((Date.now()-first)/864e5)+1));
+  return isFinite(first)?first:null;
 }
 function seriesFor(id,days){
   if(days===7){
@@ -1150,11 +1140,66 @@ function seriesFor(id,days){
   }
   return histCache[id+':'+days]?.pts||null;
 }
-async function ensureHistory(days){
+function priceAt(id,days,t){
+  const sr=seriesFor(id,days);
+  if(!sr||sr.length<5)return null;
+  let best=sr[0];
+  for(const pt of sr){if(Math.abs(pt[0]-t)<Math.abs(best[0]-t))best=pt;}
+  return best[1];
+}
+// The position as it stood on a given day: only buys and sells made up to then
+function stateOn(it,iso){
+  const c={...it,buys:(it.buys||[]).filter(b=>(b.date||'')<=iso),sells:(it.sells||[]).filter(x=>(x.date||'')<=iso)};
+  return c.buys.length?dca(c):null;
+}
+const profitOf=(it,d,price)=>{
+  const open=d.qty>EPS?(it.posType==='short'?d.posSize-price*d.qty:price*d.qty-d.posSize):0;
+  return d.realized+open;
+};
+// Result for the selected period: {state:'ok'|'loading'|'error', delta, pct, since}
+function periodStats(){
+  const now=Date.now(),first=firstBuyMs();
+  const days=PERIOD_DAYS[period];
+  let t0=days?now-days*864e5:null;
+  const clipped=t0==null||(first!=null&&first>=t0);   // you started after the period began
+  if(clipped)t0=null;
+  const iso0=t0==null?null:isoDay(t0);
+
+  // Profit now on everything you have ever bought, including sold positions
+  let profitNow=0,startProfit=0,startCap=0,inflow=0;
+  const held=[];
+  for(const it of portfolio){
+    const d=dca(it),p=priceCache[it.coinId]?.usd;
+    if(d.qty>EPS&&!(p>0))return{state:'loading',since:first,clipped};
+    profitNow+=profitOf(it,d,p);
+    for(const b of it.buys||[]){
+      if(iso0==null||(b.date||'')>iso0)inflow+=b.qty*(b.price||0)/(b.leverage||1);
+    }
+    if(iso0!=null){const st=stateOn(it,iso0);if(st)held.push({it,st});}
+  }
+  if(iso0!=null){
+    // Coins you already held at the start need their price back then
+    const need=held.filter(h=>h.st.qty>EPS).map(h=>h.it.coinId);
+    if(need.some(id=>seriesFor(id,days)==null)){
+      if(histFailAt&&Date.now()-histFailAt<60e3)return{state:'error',days};
+      ensureHistory(days,need);
+      return{state:'loading',days};
+    }
+    for(const h of held){
+      const price=h.st.qty>EPS?priceAt(h.it.coinId,days,t0):0;
+      if(h.st.qty>EPS&&!(price>0))return{state:'error',days};
+      startProfit+=profitOf(h.it,h.st,price);
+      startCap+=h.st.margin+(h.st.qty>EPS?profitOf(h.it,{...h.st,realized:0},price):0);
+    }
+  }
+  const delta=profitNow-startProfit,cap=startCap+inflow;
+  return{state:'ok',delta,pct:cap>0?delta/cap*100:null,since:first,clipped,days};
+}
+async function ensureHistory(days,ids){
   if(days<=7||histBusy)return;
-  const need=openIds().filter(id=>{const h=histCache[id+':'+days];return !h||Date.now()-h.at>HIST_TTL(days);});
+  const need=[...new Set(ids)].filter(id=>{const h=histCache[id+':'+days];return !h||Date.now()-h.at>HIST_TTL(days);});
   if(!need.length)return;
-  histBusy=true;const token=++histToken;
+  histBusy=true;
   try{
     // 3 at a time keeps us under the free-plan rate limit
     for(let i=0;i<need.length;i+=3){
@@ -1169,169 +1214,19 @@ async function ensureHistory(days){
     console.error(e);histFailAt=Date.now();
   }finally{
     histBusy=false;
-    if(token===histToken)render();
+    render();
   }
 }
 window.retryHistory=()=>{histFailAt=0;render();};
-
-// Portfolio value over time: each coin's price × the quantity you hold today, on a shared time grid
-function buildSeries(days,base){
-  const data=[];
-  for(const it of openItems()){
-    const sr=seriesFor(it.coinId,days);
-    if(!sr||sr.length<5)return null;
-    data.push({it,sr,d:dca(it)});
-  }
-  if(!data.length)return null;
-  const start=Math.max(...data.map(x=>x.sr[0][0]));
-  const ref=data[0].sr.filter(pt=>pt[0]>=start);
-  if(ref.length<5)return null;
-  const t=ref.map(pt=>pt[0]);
-  t[t.length-1]=Date.now();
-  const v=new Array(t.length).fill(base);
-  for(const x of data){
-    const live=priceCache[x.it.coinId]?.usd,short=x.it.posType==='short';
-    let j=0;
-    for(let i=0;i<t.length;i++){
-      while(j<x.sr.length-1&&x.sr[j+1][0]<=t[i])j++;
-      const price=(i===t.length-1&&live>0)?live:x.sr[j][1];
-      const val=price*x.d.qty;
-      v[i]+=short?x.d.posSize-val:val-x.d.posSize;
-    }
-  }
-  return{t,v};
-}
-// What the chart should show right now: data, loading, error or nothing to show
-function chartView(base){
-  if(!openItems().length)return{state:'empty',msg:'No open positions'};
-  const days=periodDays();
-  if(days>7){
-    const missing=openIds().some(id=>!histCache[id+':'+days]);
-    const stale=openIds().some(id=>{const h=histCache[id+':'+days];return h&&Date.now()-h.at>HIST_TTL(days);});
-    if(missing){
-      if(histFailAt&&Date.now()-histFailAt<60e3)return{state:'error'};
-      ensureHistory(days);
-      return{state:'loading'};
-    }
-    if(stale&&!histFailAt)ensureHistory(days);
-  }
-  const sr=buildSeries(days,base);
-  if(!sr)return{state:'empty',msg:'The chart appears once prices load',loading:true};
-  return{state:'ok',days,...sr};
+function periodCaption(r){
+  const fmt=t=>t==null?'':new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if(r.state==='loading')return'Loading history…';
+  if(r.state==='error')return'Couldn\'t load price history. <button class="link-btn" onclick="retryHistory()">Try again</button>';
+  if(r.clipped)return r.since!=null?`Since your first buy · ${fmt(r.since)}`:'Since you started investing';
+  const name=period==='1w'?'7 days':period==='1m'?'30 days':'year';
+  return`Last ${name==='year'?'year':name} · counted from your buys`;
 }
 
-// ── Candles ──
-function bucketMs(spanDays){
-  if(spanDays<=8)return 4*3600e3;
-  if(spanDays<=32)return 864e5;
-  if(spanDays<=100)return 2*864e5;
-  if(spanDays<=200)return 4*864e5;
-  return 7*864e5;
-}
-function bucketLabel(ms){
-  if(ms<864e5)return`${ms/3600e3} hours`;
-  if(ms===864e5)return'1 day';
-  return ms>=7*864e5?'1 week':`${ms/864e5} days`;
-}
-function toCandles(t,v,ms){
-  const out=[];let cur=null;
-  for(let i=0;i<v.length;i++){
-    const k=Math.floor(t[i]/ms);
-    if(!cur||cur.k!==k){
-      if(cur)out.push(cur);
-      const o=cur?cur.c:v[i];
-      cur={k,t0:t[i],t1:t[i],o,h:Math.max(o,v[i]),l:Math.min(o,v[i]),c:v[i]};
-    }else{cur.h=Math.max(cur.h,v[i]);cur.l=Math.min(cur.l,v[i]);cur.c=v[i];cur.t1=t[i];}
-  }
-  if(cur)out.push(cur);
-  return out;
-}
-const fCompact=v=>Math.abs(v)>=10000?(v/1000).toFixed(1)+'K':v.toFixed(2);
-function fWhen(ts,days,withHour){
-  const o=days>200?{month:'short',day:'numeric',year:'numeric'}:withHour?{month:'short',day:'numeric',hour:'numeric'}:{month:'short',day:'numeric'};
-  return new Date(ts).toLocaleString('en-US',o);
-}
-
-function renderHeroChart(view){
-  const wrap=$('heroChart');
-  chartSrc=view&&view.state==='ok'?view:null;
-  const cap=$('chartCap');
-  if(!chartSrc){
-    chartCandles=null;
-    let inner;
-    if(view&&view.state==='error')inner=`<span>Couldn't load price history</span><button class="btn ghost" onclick="retryHistory()">Try again</button>`;
-    else if(view&&view.state==='loading')inner=`<span>Loading history…</span>`;
-    else inner=`<span>${view&&view.msg||'The chart appears once prices load'}</span>`;
-    wrap.innerHTML=`<div class="chart-empty">${inner}</div>`;
-    cap.textContent='Based on what you hold today';
-    return;
-  }
-  const{t,v,days}=chartSrc;
-  const W=Math.max(200,Math.round(wrap.clientWidth||360)),H=128,pad=10;
-  const span=(t[t.length-1]-t[0])/864e5;
-  const ms=bucketMs(span);
-  chartCandles=chartStyle==='candle'?toCandles(t,v,ms):null;
-  if(chartCandles&&chartCandles.length<3)chartCandles=null;
-  chartMode=chartCandles?'candle':'line';
-  const lo=chartCandles?Math.min(...chartCandles.map(c=>c.l)):Math.min(...v);
-  const hi=chartCandles?Math.max(...chartCandles.map(c=>c.h)):Math.max(...v);
-  const rng=hi-lo||1;
-  chartScale={min:lo,rng,H,pad};
-  const yOf=x=>pad+(1-(x-lo)/rng)*(H-pad*2);
-  const up=v[v.length-1]>=v[0];
-  wrap.style.setProperty('--ch',up?'var(--gain)':'var(--loss)');
-  if(!chartRevealed){wrap.classList.add('reveal');chartRevealed=true;}else wrap.classList.remove('reveal');
-  let shape;
-  if(chartCandles){
-    const n=chartCandles.length,slot=W/n,bw=Math.max(2,Math.min(slot*.64,14));
-    shape=chartCandles.map((c,i)=>{
-      const x=(i+.5)*slot,cls=c.c>=c.o?'cu':'cd';
-      const yo=yOf(c.o),yc=yOf(c.c),top=Math.min(yo,yc),bh=Math.max(1.5,Math.abs(yo-yc));
-      return`<line class="cwick ${cls}" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${yOf(c.h).toFixed(1)}" y2="${yOf(c.l).toFixed(1)}"/><rect class="${cls}" x="${(x-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1"/>`;
-    }).join('');
-  }else{
-    const line=v.map((x,i)=>`${i?'L':'M'}${(i/(v.length-1)*W).toFixed(1)} ${yOf(x).toFixed(1)}`).join('');
-    shape=`<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ch);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--ch);stop-opacity:0"/></linearGradient></defs>
-    <path class="ha" d="${line}L${W} ${H}L0 ${H}Z"/><path class="hl" d="${line}"/>`;
-  }
-  wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Portfolio value chart">${shape}</svg>
-    <div class="cross" hidden></div><i class="cross-dot" hidden></i><div class="tip sensitive" hidden></div>`;
-  const rangeText=period==='1w'?'Last 7 days':period==='1m'?'Last 30 days':period==='1y'?'Last year':(days>=365?'Last year':days<=7?'Last 7 days':'Since your first buy');
-  cap.textContent=`${rangeText} · ${chartCandles?`1 candle = ${bucketLabel(ms)} · `:''}at today's holdings`;
-}
-function scrub(e){
-  if(!chartSrc)return;
-  const wrap=$('heroChart'),r=wrap.getBoundingClientRect();
-  const cross=wrap.querySelector('.cross'),dot=wrap.querySelector('.cross-dot'),tip=wrap.querySelector('.tip');
-  if(!cross)return;
-  const x=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
-  const{t,v,days}=chartSrc;
-  let px;
-  if(chartMode==='candle'){
-    const n=chartCandles.length,i=Math.min(n-1,Math.floor(x*n)),c=chartCandles[i];
-    px=(i+.5)/n*r.width;
-    dot.hidden=true;
-    const ms=bucketMs((t[t.length-1]-t[0])/864e5);
-    const when=ms<864e5?fWhen(c.t0,days,true):ms===864e5?fWhen(c.t0,days,false):`${fWhen(c.t0,days,false)} – ${fWhen(c.t1,days,false)}`;
-    tip.className='tip multi sensitive';
-    tip.innerHTML=`<span class="tm">${when}</span>O ${fCompact(c.o)}  H ${fCompact(c.h)}<br>L ${fCompact(c.l)}  C ${fCompact(c.c)}`;
-  }else{
-    const n=v.length,i=Math.round(x*(n-1));
-    px=i/(n-1)*r.width;
-    const{min,rng,H,pad}=chartScale;
-    dot.style.left=px+'px';dot.style.top=(pad+(1-(v[i]-min)/rng)*(H-pad*2))+'px';dot.hidden=false;
-    tip.className='tip sensitive';
-    tip.textContent=`${fUSD(v[i])} · ${fWhen(t[i],days,days<=31)}`;
-  }
-  cross.style.left=px+'px';cross.hidden=false;
-  tip.hidden=false;
-  tip.style.left=Math.min(Math.max(px-tip.offsetWidth/2,8),r.width-tip.offsetWidth-8)+'px';
-}
-function unscrub(){$('heroChart').querySelectorAll('.cross,.cross-dot,.tip').forEach(el=>el.hidden=true);}
-$('heroChart').addEventListener('pointermove',scrub);
-$('heroChart').addEventListener('pointerdown',scrub);
-$('heroChart').addEventListener('pointerleave',unscrub);
-$('heroChart').addEventListener('pointercancel',unscrub);
 // Keep the big balance on one line: shrink the font until it fits its column
 function fitHeroValue(){
   const el=$('totalValue');if(!el||!el.clientWidth)return;
@@ -1339,27 +1234,19 @@ function fitHeroValue(){
   while(el.scrollWidth>el.clientWidth&&size>24){size-=2;el.style.fontSize=size+'px';}
 }
 let resizeTO=null;
-window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(()=>{fitHeroValue();if(chartSrc)renderHeroChart(chartSrc);},150);});
+window.addEventListener('resize',()=>{clearTimeout(resizeTO);resizeTO=setTimeout(fitHeroValue,150);});
 
-// Period and chart style controls
-function syncChartControls(){
+// Period control
+function syncPeriodControl(){
   document.querySelectorAll('#periodSeg .seg-btn').forEach(b=>{const on=b.dataset.p===period;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  document.querySelectorAll('#chartSeg .seg-btn').forEach(b=>b.classList.toggle('on',b.dataset.style===chartStyle));
 }
 $('periodSeg').addEventListener('click',e=>{
   const b=e.target.closest('.seg-btn');if(!b||b.dataset.p===period)return;
   period=b.dataset.p;store.set('ct-period',period);
-  histFailAt=0;chartRevealed=false;
-  syncChartControls();render();
+  histFailAt=0;
+  syncPeriodControl();render();
 });
-$('chartSeg').addEventListener('click',e=>{
-  const b=e.target.closest('.seg-btn');if(!b||b.dataset.style===chartStyle)return;
-  chartStyle=b.dataset.style;store.set('ct-chart',chartStyle);
-  chartRevealed=false;
-  syncChartControls();
-  if(chartSrc)renderHeroChart(chartSrc);
-});
-syncChartControls();
+syncPeriodControl();
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Render
@@ -1470,18 +1357,14 @@ function render(){
   const realEl=$('totRealized');
   realEl.textContent=anySells?fPnl(realizedTotal):'—';
   realEl.className='v sensitive '+(anySells?sgnCls(realizedTotal):'');
-  const view=chartView(base);
   // The red/green figure beside the balance follows the selected period
-  let pd=totalPnL,pp=pct,pOK=true;
-  if(period!=='all'){
-    if(view.state==='ok'){pd=view.v[view.v.length-1]-view.v[0];pp=view.v[0]>0?pd/view.v[0]*100:null;}
-    else pOK=false;
-  }
+  const res=periodStats();
+  const pOK=res.state==='ok',pd=res.delta,pp=res.pct;
   const pill=$('totPnl');
   pill.className='delta sensitive '+(pOK?sgnCls(pd):'flat');
   pill.innerHTML=pOK?`<span class="d-arrow">${ic(pd>=0?'long':'short',24)}</span><span class="d-txt"><span class="d-amt">${fPnl(pd)}</span><span class="d-pct">${fPctS(pp)}</span></span>`:'<span class="d-txt"><span class="d-amt">—</span></span>';
+  $('chartCap').innerHTML=periodCaption(res);
   fitHeroValue();
-  renderHeroChart(view);
 
   // Spot and Future tiles
   $('balanceCards').hidden=false;
