@@ -1138,6 +1138,7 @@ function seriesFor(id,days){
     const sp=priceCache[id]?.spark;
     if(sp&&sp.length>=10){const now=Date.now();return sp.map((p,i)=>[now-(sp.length-1-i)*3600e3,p]);}
   }
+  // Also covers coins with no sparkline, and coins you have since sold (we no longer refresh their price)
   return histCache[id+':'+days]?.pts||null;
 }
 function priceAt(id,days,t){
@@ -1196,8 +1197,11 @@ function periodStats(){
   return{state:'ok',delta,pct:cap>0?delta/cap*100:null,since:first,clipped,days};
 }
 async function ensureHistory(days,ids){
-  if(days<=7||histBusy)return;
-  const need=[...new Set(ids)].filter(id=>{const h=histCache[id+':'+days];return !h||Date.now()-h.at>HIST_TTL(days);});
+  if(histBusy)return;
+  const need=[...new Set(ids)].filter(id=>{
+    if(days===7&&priceCache[id]?.spark?.length>=10)return false;
+    const h=histCache[id+':'+days];return !h||Date.now()-h.at>HIST_TTL(days);
+  });
   if(!need.length)return;
   histBusy=true;
   try{
